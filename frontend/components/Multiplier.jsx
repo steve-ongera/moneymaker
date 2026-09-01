@@ -4,16 +4,17 @@ export default function Multiplier({ value, status }) {
   const cssClass = status === "CRASHED" ? "multiplier crashed" : "multiplier rising";
 
   return (
-    <div className={cssClass}>
-      {label}
-      {status !== "CRASHED" && (
-        <span className="multiplier-trend">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-            <polyline points="17 6 23 6 23 12"/>
-          </svg>
-        </span>
-      )}
+    <div className="multiplier-wrapper">
+      <div className={cssClass}>
+        {label}
+        {status !== "CRASHED" && status !== "WAITING" && status !== "BETTING_OPEN" && (
+          <span className="multiplier-trend">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+             
+            </svg>
+          </span>
+        )}
+      </div>
     </div>
   );
 }

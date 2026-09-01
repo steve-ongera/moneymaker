@@ -29,6 +29,7 @@ export default function AviatorGame() {
   const status = round?.status;
   const crashed = status === "CRASHED";
   const running = status === "RUNNING";
+  const isBettingOpen = status === "BETTING_OPEN";
 
   return (
     <div className="aviator-game">
@@ -52,7 +53,12 @@ export default function AviatorGame() {
           <Plane multiplier={multiplier} crashed={crashed} running={running} />
           <CrashAnimation crashed={crashed} crashMultiplier={lastCrash} />
 
-          {status === "BETTING_OPEN" && <Countdown closesAt={round?.betting_closes_at} />}
+          {/* Countdown - centralized in the middle of the stage */}
+          {isBettingOpen && (
+            <div className="countdown-wrapper">
+              <Countdown closesAt={round?.betting_closes_at} />
+            </div>
+          )}
         </div>
       </div>
 

@@ -9,9 +9,9 @@
      5.  Navbar
      6.  Sidebar
      7.  Buttons
-     8.  Forms & Auth pages (Login / Register)
+     8.  Forms & Auth pages (Login / Register) — UPDATED with toggle eye & 2-col
      9.  Alerts & Toast notifications
-     10. Aviator game — stage, sky, plane, multiplier, countdown
+     10. Aviator game — stage, sky, plane, multiplier, countdown — UPDATED
      11. Crash animation
      12. Game history chips
      13. Betting panel (BettingPanel / CashoutButton)
@@ -628,7 +628,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   8. FORMS & AUTH PAGES
+   8. FORMS & AUTH PAGES — UPDATED with toggle eye & 2-column
    ========================================================================== */
 
 .field {
@@ -909,6 +909,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   }
 }
 
+
 /* ==========================================================================
    9. ALERTS & TOASTS
    ========================================================================== */
@@ -970,7 +971,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   10. AVIATOR GAME — STAGE / SKY / PLANE / MULTIPLIER
+   10. AVIATOR GAME — STAGE / SKY / PLANE / MULTIPLIER / COUNTDOWN — UPDATED
    ========================================================================== */
 
 .aviator-game {
@@ -1071,51 +1072,229 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   z-index: 3;
 }
 
+/* ---- Multiplier (Centered) --------------------------------------------- */
+
+.multiplier-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .multiplier {
   font-family: var(--font-display);
-  font-size: clamp(2.25rem, 9vw, var(--fs-multiplier));
+  font-size: clamp(3rem, 10vw, 5.5rem);
   font-weight: var(--fw-black);
   color: #16181f;
-  z-index: 2;
   letter-spacing: -0.01em;
   text-shadow: 0 2px 0 rgba(255, 255, 255, 0.25);
   transition: color var(--dur-base) var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.multiplier.rising { color: #14151f; }
+
+.multiplier.rising {
+  color: #14151f;
+  animation: multiplier-float 2s ease-in-out infinite;
+}
+
+@keyframes multiplier-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
 .multiplier.crashed {
   color: var(--red-deep);
-  animation: multiplier-shake 0.4s var(--ease-out);
+  animation: multiplier-shake 0.5s var(--ease-out);
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.2);
+  text-shadow: 0 2px 0 rgba(239, 68, 68, 0.2);
 }
 
 @keyframes multiplier-shake {
   0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(5px); }
-  60% { transform: translateX(-3px); }
-  80% { transform: translateX(2px); }
+  10% { transform: translateX(-8px); }
+  20% { transform: translateX(6px); }
+  30% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  50% { transform: translateX(-3px); }
+  60% { transform: translateX(2px); }
+  70% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+  90% { transform: translateX(-1px); }
 }
 
-.countdown {
+.multiplier-trend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: trend-rise 1s ease-in-out infinite;
+}
+
+@keyframes trend-rise {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+.multiplier-trend svg {
+  stroke: currentColor;
+  opacity: 0.6;
+}
+
+/* When crashed, hide the trend icon */
+.multiplier.crashed .multiplier-trend {
+  display: none;
+}
+
+/* Small multiplier on mobile */
+@media (max-width: 767px) {
+  .multiplier {
+    font-size: clamp(2rem, 8vw, 3rem);
+    padding: var(--sp-2);
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .multiplier-trend svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Larger multiplier on desktop */
+@media (min-width: 1024px) {
+  .multiplier {
+    font-size: clamp(4rem, 8vw, 6rem);
+    padding: var(--sp-3) var(--sp-6);
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* ---- Countdown (Centered) ---------------------------------------------- */
+
+.countdown-wrapper {
   position: absolute;
   bottom: var(--sp-4);
   left: 50%;
   transform: translateX(-50%);
-  color: var(--brand-4);
-  font-weight: var(--fw-bold);
-  font-size: var(--fs-sm);
   z-index: 3;
-  background: rgba(255, 255, 255, 0.5);
-  padding: 4px 14px;
-  border-radius: var(--radius-pill);
+  width: 80%;
+  max-width: 320px;
 }
-.countdown-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
+
+.countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  background: rgba(20, 20, 30, 0.92);
+  backdrop-filter: blur(8px);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.countdown-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.countdown-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-1);
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.95); }
+}
+
+.countdown-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+}
+
+.countdown-number {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--brand-1);
+  min-width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-bar-wrapper {
+  width: 100%;
   height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.countdown-bar {
+  height: 100%;
   background: var(--brand-gradient-flat);
-  z-index: 3;
+  border-radius: var(--radius-pill);
   transition: width 100ms linear;
+}
+
+/* Responsive countdown */
+@media (max-width: 767px) {
+  .countdown-wrapper {
+    width: 90%;
+    bottom: var(--sp-3);
+  }
+
+  .countdown {
+    padding: var(--sp-2) var(--sp-3);
+    gap: var(--sp-1);
+  }
+
+  .countdown-number {
+    font-size: var(--fs-md);
+    min-width: 40px;
+  }
+
+  .countdown-label {
+    font-size: var(--fs-2xs);
+  }
+
+  .countdown-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .countdown-wrapper {
+    max-width: 360px;
+    bottom: var(--sp-5);
+  }
+
+  .countdown {
+    padding: var(--sp-4) var(--sp-5);
+  }
 }
 
 /* ---- Plane --------------------------------------------------------------
@@ -1759,6 +1938,12 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
 
 .page-not-found {
   display: flex;
