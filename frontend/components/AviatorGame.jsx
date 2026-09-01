@@ -35,16 +35,16 @@ export default function AviatorGame() {
     <div className="aviator-game">
       <Notification />
 
-      {/* grid-area: history - moved ABOVE the game stage */}
-      <div className="game-history">
-        <GameHistory />
-      </div>
-
-      {/* grid-area: stage — connection badge lives here */}
+      {/* grid-area: stage — connection badge and history live here */}
       <div className="game-stage-wrap">
-        <div className="connection-badge">
-          <span className={`dot dot-${connectionStatus}`} />
-          {CONNECTION_LABEL[connectionStatus] || "Reconnecting..."}
+        <div className="game-stage-header">
+          <div className="connection-badge">
+            <span className={`dot dot-${connectionStatus}`} />
+            {CONNECTION_LABEL[connectionStatus] || "Reconnecting..."}
+          </div>
+          <div className="game-history">
+            <GameHistory />
+          </div>
         </div>
 
         <div className="game-stage">
