@@ -1230,8 +1230,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   justify-content: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(4px);
+  
   border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -1441,18 +1440,39 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   width: 100%;
   height: 100%;
 }
-.trail-path {
-  fill: none;
-  stroke: var(--brand-2);
-  stroke-width: 3;
-  stroke-linecap: round;
-  opacity: 0.45;
-  stroke-dasharray: 6 8;
+
+.trail-fill {
+  fill: url(#planeTrailGradient);
+  opacity: 0;
   transition: opacity var(--dur-base) var(--ease-out);
 }
-.trail-path.trail-active {
-  opacity: 0.85;
-  stroke-dasharray: none;
+.trail-fill.trail-active {
+  opacity: 1;
+}
+
+.trail-line {
+  fill: none;
+  stroke: var(--brand-1);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.trail-line.trail-active {
+  opacity: 0.9;
+}
+
+.trail-stop-top {
+  stop-color: var(--brand-1);
+  stop-opacity: 0.9;
+}
+.trail-stop-mid {
+  stop-color: var(--brand-3);
+  stop-opacity: 0.55;
+}
+.trail-stop-bottom {
+  stop-color: var(--brand-4);
+  stop-opacity: 0.06;
 }
 
 .plane-shadow {
@@ -1465,68 +1485,50 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   background: radial-gradient(ellipse at center, rgba(20, 25, 40, 0.35), transparent 70%);
   opacity: var(--shadow-opacity, 0.3);
   border-radius: var(--radius-pill);
-  transition: left 120ms ease-out, transform 120ms ease-out, opacity 120ms ease-out;
+  transition: left 120ms linear, transform 120ms linear, opacity 120ms linear;
   z-index: 1;
   pointer-events: none;
 }
 @media (min-width: 768px) { .plane-shadow { width: 60px; height: 14px; } }
 
+/* Position + scale only — no rotation, so the sprite stays level the whole
+   flight. A linear transition keeps it gliding smoothly along the same
+   straight track as the trail wedge, with no jitter or shake. */
 .plane-icon {
   position: absolute;
   width: 64px;
   height: 64px;
   left: calc(8% + var(--plane-x, 0) * 74%);
   bottom: calc(10% + var(--plane-y, 0) * 68%);
-  transform: translate(-50%, 50%);
+  transform: translate(-50%, 50%) scale(var(--plane-scale, 1));
+  transform-origin: center;
   will-change: left, bottom;
-  transition: left 120ms ease-out, bottom 120ms ease-out;
+  transition: left 120ms linear, bottom 120ms linear, transform 120ms linear;
   z-index: 2;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
 }
 
 @media (min-width: 768px) { .plane-icon { width: 84px; height: 84px; } }
 @media (min-width: 1024px) { .plane-icon { width: 104px; height: 104px; } }
 
-.plane-pitch {
-  width: 100%;
-  height: 100%;
-  transform: rotate(var(--plane-rot, -6deg)) scale(var(--plane-scale, 1));
-  transform-origin: center;
-  transition: transform 120ms ease-out;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
-}
-
 .plane-sprite {
   width: 100%;
   height: 100%;
-  background-image: url("../src/assets/plane.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-}
-
-.plane-sprite.wobble {
-  animation: plane-wobble 1.6s ease-in-out infinite;
-}
-@keyframes plane-wobble {
-  0%, 100% { transform: rotate(0deg) translateY(0); }
-  50% { transform: rotate(2.5deg) translateY(-3px); }
-}
-
-.plane-sprite.strain {
-  animation: plane-wobble 0.9s ease-in-out infinite;
 }
 
 .plane-icon.plane-crashed {
   animation: plane-fall 0.6s var(--ease-in-out) forwards;
 }
 .plane-icon.plane-crashed .plane-sprite {
-  animation: none;
   filter: saturate(0.35) brightness(0.8);
 }
 @keyframes plane-fall {
-  0% { transform: translate(-50%, 50%) rotate(0deg); opacity: 1; }
-  55% { transform: translate(-50%, 90%) rotate(95deg) scale(1.05); opacity: 1; }
-  100% { transform: translate(-50%, 220%) rotate(150deg) scale(0.75); opacity: 0; }
+  0% { transform: translate(-50%, 50%) scale(var(--plane-scale, 1)); opacity: 1; }
+  55% { transform: translate(-50%, 90%) scale(calc(var(--plane-scale, 1) * 1.05)); opacity: 1; }
+  100% { transform: translate(-50%, 220%) scale(calc(var(--plane-scale, 1) * 0.75)); opacity: 0; }
 }
 
 .plane-smoke {

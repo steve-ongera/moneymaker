@@ -18,6 +18,8 @@ import math
 import secrets
 from datetime import timedelta
 from decimal import ROUND_DOWN, Decimal
+from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from asgiref.sync import sync_to_async
 from channels.layers import get_channel_layer
@@ -119,26 +121,31 @@ class RoundEngine:
         server_seed = generate_server_seed()
         server_seed_hash = hash_server_seed(server_seed)
         client_seed = secrets.token_hex(8)
-
-        last = GameRound.objects.order_by("-id").first()
-        seq = (last.id + 1) if last else 1
-        nonce = seq
-        round_id = f"MM-{timezone.now().strftime('%Y%m%d')}-{seq:06d}"
-
-        crash_multiplier = compute_crash_multiplier(server_seed, client_seed, nonce)
         now = timezone.now()
 
-        return GameRound.objects.create(
-            round_id=round_id,
-            status=GameRound.Status.BETTING_OPEN,
-            server_seed=server_seed,
-            server_seed_hash=server_seed_hash,
-            client_seed=client_seed,
-            nonce=nonce,
-            crash_multiplier=crash_multiplier,
-            betting_opens_at=now,
-            betting_closes_at=now + timedelta(seconds=settings.AVIATOR_BETTING_DURATION_SECONDS),
-        )
+        for attempt in range(5):
+            with transaction.atomic():
+                last = GameRound.objects.select_for_update().order_by("-id").first()
+                seq = (last.id + 1) if last else 1
+                nonce = seq
+                round_id = f"MM-{now.strftime('%Y%m%d')}-{seq:06d}"
+                crash_multiplier = compute_crash_multiplier(server_seed, client_seed, nonce)
+                try:
+                    return GameRound.objects.create(
+                        round_id=round_id,
+                        status=GameRound.Status.BETTING_OPEN,
+                        server_seed=server_seed,
+                        server_seed_hash=server_seed_hash,
+                        client_seed=client_seed,
+                        nonce=nonce,
+                        crash_multiplier=crash_multiplier,
+                        betting_opens_at=now,
+                        betting_closes_at=now + timedelta(seconds=settings.AVIATOR_BETTING_DURATION_SECONDS),
+                    )
+                except IntegrityError:
+                    continue
+        raise RuntimeError("Could not allocate a unique round_id after 5 attempts")
+
 
     async def _save(self, round_obj: GameRound):
         await sync_to_async(round_obj.save)()
