@@ -23,21 +23,24 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(","
 # Applications
 # ------------------------------------------------------------------
 INSTALLED_APPS = [
+    "daphne",  # must be first — makes `runserver` ASGI-capable automatically
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
- 
+
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
     "channels",
- 
+
     "api",
 ]
- 
+
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -100,18 +103,23 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
  
 # ------------------------------------------------------------------
-# Redis / Channels (channel layer + coordination only — NOT financial state)
+# Redis / Channels
 # ------------------------------------------------------------------
+USE_REDIS = os.environ.get("USE_REDIS", "False") == "True"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
- 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [REDIS_URL],
+
+if USE_REDIS:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
         },
-    },
-}
+    }
+else:
+    # Dev-only: works within a single process, no external service required.
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+    }
  
 # ------------------------------------------------------------------
 # DRF / JWT
