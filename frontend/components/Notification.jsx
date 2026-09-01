@@ -4,7 +4,7 @@ import { useAviator } from "../hooks/useAviator.js";
 const ICONS = {
   success: "bi-check-circle-fill",
   error: "bi-exclamation-triangle-fill",
-  crash: "bi-airplane-fill",
+  crash: "bi bi-x-circle",
 };
 
 export default function Notification() {
