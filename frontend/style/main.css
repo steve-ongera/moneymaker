@@ -1,0 +1,250 @@
+:root {
+  --bg: #0b0e14;
+  --bg-panel: #131722;
+  --bg-panel-alt: #1a1f2e;
+  --border: #262c3d;
+  --text: #e8eaf0;
+  --text-dim: #8890a4;
+  --accent: #ff5c8a;
+  --accent-2: #6f5cff;
+  --green: #21c17c;
+  --red: #ef4a5f;
+  --gold: #ffb547;
+  --radius: 10px;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Roboto, -apple-system, sans-serif;
+}
+
+a { color: inherit; text-decoration: none; }
+code { background: var(--bg-panel-alt); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.app-content { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+/* ---------------- Navbar ---------------- */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.navbar-brand { font-weight: 800; letter-spacing: 1px; font-size: 1.1rem; color: var(--accent); }
+.navbar-links { display: flex; gap: 20px; }
+.navbar-links a { color: var(--text-dim); font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+.navbar-links a:hover { color: var(--text); }
+.navbar-right { display: flex; align-items: center; gap: 12px; }
+.navbar-balance {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+
+/* ---------------- Buttons ---------------- */
+.btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: transform 0.05s ease, opacity 0.2s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; }
+.btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+.btn-block { width: 100%; }
+.btn-small { padding: 6px 12px; font-size: 0.8rem; }
+.btn-icon { padding: 8px 14px; background: var(--bg-panel-alt); color: var(--text); border: 1px solid var(--border); }
+.btn-chip { background: var(--bg-panel-alt); color: var(--text-dim); border: 1px solid var(--border); padding: 6px 12px; }
+.btn-bet { background: linear-gradient(135deg, #21c17c, #17a367); color: #fff; font-size: 1.05rem; padding: 16px; }
+.btn-cashout { background: linear-gradient(135deg, var(--gold), #ff8a3d); color: #201400; font-size: 1.05rem; padding: 16px; }
+
+/* ---------------- Auth pages ---------------- */
+.auth-page { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+.auth-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  width: 360px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+.auth-card h1 { color: var(--accent); margin-bottom: 0; }
+.auth-subtitle { color: var(--text-dim); margin-top: 4px; margin-bottom: 20px; }
+.auth-card label { font-size: 0.8rem; color: var(--text-dim); margin: 10px 0 4px; }
+.auth-card input {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.auth-card .btn { margin-top: 20px; }
+.auth-switch { text-align: center; margin-top: 16px; color: var(--text-dim); font-size: 0.85rem; }
+.auth-switch a { color: var(--accent); font-weight: 600; }
+
+/* ---------------- Alerts ---------------- */
+.alert { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin: 8px 0; }
+.alert-error { background: rgba(239, 74, 95, 0.15); color: var(--red); border: 1px solid rgba(239,74,95,0.3); }
+.alert-success { background: rgba(33, 193, 124, 0.15); color: var(--green); border: 1px solid rgba(33,193,124,0.3); }
+
+/* ---------------- Aviator game ---------------- */
+.aviator-game { display: flex; flex-direction: column; gap: 16px; }
+.connection-badge {
+  display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); align-self: flex-end;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
+.dot-connected { background: var(--green); }
+.dot-connecting { background: var(--gold); }
+.dot-disconnected { background: var(--red); }
+
+.game-history { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.history-chip { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.chip-gray { background: var(--bg-panel-alt); color: var(--text-dim); }
+.chip-blue { background: rgba(111, 92, 255, 0.2); color: #a79bff; }
+.chip-purple { background: rgba(255, 92, 138, 0.2); color: var(--accent); }
+
+.game-stage {
+  position: relative;
+  background: radial-gradient(circle at 30% 20%, #182036, var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  height: 380px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.game-status-label { position: absolute; top: 16px; color: var(--text-dim); font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
+
+.multiplier {
+  font-size: 3.4rem;
+  font-weight: 800;
+  color: var(--text);
+  z-index: 2;
+  text-shadow: 0 0 30px rgba(255,255,255,0.15);
+}
+.multiplier.crashed { color: var(--red); }
+
+.countdown { position: absolute; bottom: 16px; color: var(--gold); font-size: 0.9rem; z-index: 2; }
+
+.plane-track { position: absolute; inset: 0; }
+.plane-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trail-path { fill: none; stroke: var(--accent); stroke-width: 0.6; opacity: 0.5; }
+.trail-active { opacity: 0.9; }
+.plane-icon {
+  position: absolute;
+  top: 0; left: 0;
+  font-size: 1.8rem;
+  color: var(--gold);
+  transition: transform 0.1s linear, opacity 0.3s ease;
+}
+.plane-crashed { color: var(--red); }
+.crash-burst { position: absolute; top: 40%; left: 40%; font-size: 2rem; color: var(--red); animation: pop 0.4s ease; }
+@keyframes pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.crash-animation { position: absolute; inset: 0; pointer-events: none; }
+.crash-particle {
+  position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: burst 0.6s ease-out forwards;
+  animation-delay: var(--delay);
+}
+@keyframes burst {
+  to {
+    transform: rotate(var(--angle)) translateX(var(--distance));
+    opacity: 0;
+  }
+}
+.crash-label {
+  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  color: var(--red); font-weight: 700;
+}
+
+/* ---------------- Betting panel ---------------- */
+.betting-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.amount-control { display: flex; align-items: center; gap: 8px; }
+.amount-control input {
+  flex: 1; text-align: center; background: var(--bg-panel-alt); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 10px; font-size: 1.1rem;
+}
+.quick-amounts { display: flex; gap: 8px; }
+.betting-panel-hint { color: var(--text-dim); font-size: 0.8rem; text-align: center; }
+
+.cashout-result { padding: 14px; border-radius: var(--radius); text-align: center; font-weight: 700; }
+.cashout-result.success { background: rgba(33, 193, 124, 0.15); color: var(--green); }
+.cashout-result.lost { background: rgba(239, 74, 95, 0.15); color: var(--red); }
+
+/* ---------------- Live bets / bet cards ---------------- */
+.live-bets { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.live-bets-empty, .empty-state { color: var(--text-dim); font-size: 0.85rem; }
+
+.bet-card { background: var(--bg-panel-alt); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 8px; }
+.bet-card.won { border-color: var(--green); }
+.bet-card.lost { border-color: var(--red); opacity: 0.7; }
+.bet-card-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
+.bet-card-amount { font-weight: 700; }
+.bet-card-detail { color: var(--green); font-size: 0.85rem; margin-top: 4px; }
+.bet-card-round { color: var(--text-dim); font-size: 0.7rem; margin-top: 4px; }
+
+.betting-history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+
+/* ---------------- Notifications ---------------- */
+.notification-stack { position: fixed; top: 80px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+.notification { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow); font-size: 0.85rem; }
+.notification-success { border-color: var(--green); color: var(--green); }
+.notification-error { border-color: var(--red); color: var(--red); }
+.notification-crash { border-color: var(--gold); color: var(--gold); }
+
+/* ---------------- Dashboard / generic pages ---------------- */
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+.dashboard-card, .wallet-page-card, .profile-card {
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;
+}
+.wallet-balance { display: flex; flex-direction: column; gap: 8px; }
+.wallet-balance-label { color: var(--text-dim); font-size: 0.85rem; }
+.wallet-balance-amount { font-size: 1.8rem; font-weight: 800; color: var(--gold); }
+
+.transaction-list { display: flex; flex-direction: column; gap: 6px; }
+.transaction-row { display: grid; grid-template-columns: 24px 1fr auto auto; gap: 12px; align-items: center; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+.transaction-info { display: flex; flex-direction: column; }
+.transaction-type { font-weight: 600; font-size: 0.85rem; }
+.transaction-date { color: var(--text-dim); font-size: 0.7rem; }
+.transaction-amount { font-weight: 700; }
+.transaction-balance { color: var(--text-dim); font-size: 0.75rem; }
+.tx-credit { color: var(--green); }
+.tx-debit { color: var(--red); }
+
+/* ---------------- Sidebar (optional layout) ---------------- */
+.sidebar { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
+.sidebar-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; color: var(--text-dim); font-size: 0.9rem; }
+.sidebar-link.active, .sidebar-link:hover { background: var(--bg-panel-alt); color: var(--text); }
+
+/* ---------------- Misc ---------------- */
+.loading-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 60px; color: var(--text-dim); }
+.spinner { width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.page-not-found { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 80px 0; color: var(--text-dim); }
