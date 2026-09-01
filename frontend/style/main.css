@@ -474,11 +474,16 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  width: 100%;
   padding: 10px var(--sp-3);
   border-radius: var(--radius-md);
   color: var(--text-dim);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
   transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
@@ -626,17 +631,33 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
    8. FORMS & AUTH PAGES
    ========================================================================== */
 
-.field { display: flex; flex-direction: column; margin-bottom: var(--sp-3); }
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--sp-3);
+}
+
 .field label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-size: var(--fs-xs);
   color: var(--text-dim);
   margin-bottom: 6px;
   font-weight: var(--fw-medium);
 }
 
+.field label svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--text-faint);
+  flex-shrink: 0;
+}
+
 .input,
 .field input,
 .field select {
+  width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -645,13 +666,22 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   font-size: var(--fs-base);
   transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
-.input::placeholder, .field input::placeholder { color: var(--text-faint); }
-.input:focus, .field input:focus {
+
+.input::placeholder,
+.field input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:focus,
+.field input:focus {
   outline: none;
   border-color: var(--brand-2);
   box-shadow: 0 0 0 3px rgba(234, 93, 11, 0.18);
 }
-.input.has-error { border-color: var(--red); }
+
+.input.has-error {
+  border-color: var(--red);
+}
 
 .field-error {
   color: var(--red);
@@ -659,14 +689,67 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   margin-top: 4px;
 }
 
-.input-group { position: relative; display: flex; align-items: center; }
-.input-group .input { padding-right: 42px; }
+/* ---- Input groups (with icons) ----------------------------------------- */
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-group .input {
+  padding-right: 42px;
+}
+
 .input-group-icon {
   position: absolute;
   right: 12px;
   color: var(--text-dim);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
+
+/* ---- Password toggle (eye icon) ---------------------------------------- */
+
+.input-group-toggle {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 6px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+
+.input-group-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.input-group-toggle:focus-visible {
+  outline: 2px solid var(--brand-1);
+  outline-offset: 2px;
+}
+
+.input-group-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- Auth page container ----------------------------------------------- */
 
 .auth-page {
   display: flex;
@@ -679,6 +762,8 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
     var(--bg-app);
 }
 
+/* ---- Auth card (single column) ----------------------------------------- */
+
 .auth-card {
   width: 100%;
   max-width: 380px;
@@ -689,10 +774,63 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   box-shadow: var(--shadow-lg);
 }
 
-.auth-card .navbar-brand { font-size: var(--fs-2xl); }
-.auth-subtitle { color: var(--text-dim); margin: 4px 0 var(--sp-5); font-size: var(--fs-sm); }
+/* ---- Auth card (wide / 2-column) --------------------------------------- */
 
-.auth-card .btn { margin-top: var(--sp-3); }
+.auth-card-wide {
+  max-width: 560px;
+}
+
+.auth-card .navbar-brand {
+  font-size: var(--fs-2xl);
+}
+
+.auth-subtitle {
+  color: var(--text-dim);
+  margin: 4px 0 var(--sp-5);
+  font-size: var(--fs-sm);
+}
+
+.auth-card .btn {
+  margin-top: var(--sp-3);
+}
+
+/* ---- Auth header ------------------------------------------------------- */
+
+.auth-header {
+  text-align: center;
+  margin-bottom: var(--sp-5);
+}
+
+.auth-header h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-2xl);
+  margin-bottom: var(--sp-1);
+}
+
+.auth-header h1 svg {
+  stroke: var(--brand-2);
+}
+
+/* ---- 2-column form grid (for registration) ----------------------------- */
+
+.auth-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+.auth-form-grid .field {
+  margin-bottom: 0;
+}
+
+.auth-form-grid .field:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Auth switch (login/register link) --------------------------------- */
 
 .auth-switch {
   text-align: center;
@@ -700,8 +838,19 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   color: var(--text-dim);
   font-size: var(--fs-sm);
 }
-.auth-switch a { color: var(--brand-1); font-weight: var(--fw-semibold); }
-.auth-switch a:hover { text-decoration: underline; }
+
+.auth-switch a {
+  color: var(--brand-1);
+  font-weight: var(--fw-semibold);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.auth-switch a:hover {
+  color: var(--brand-2);
+  text-decoration: underline;
+}
+
+/* ---- Auth divider ------------------------------------------------------- */
 
 .auth-divider {
   display: flex;
@@ -711,13 +860,54 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   font-size: var(--fs-xs);
   margin: var(--sp-4) 0;
 }
-.auth-divider::before, .auth-divider::after {
+
+.auth-divider::before,
+.auth-divider::after {
   content: "";
   flex: 1;
   height: 1px;
   background: var(--divider);
 }
 
+/* ---- Responsive: mobile adjustments ------------------------------------ */
+
+@media (max-width: 767px) {
+  .auth-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--sp-2);
+  }
+
+  .auth-card-wide {
+    max-width: 380px;
+  }
+
+  .auth-card-wide .btn-large {
+    font-size: var(--fs-base);
+    padding: var(--sp-3);
+  }
+
+  .auth-card {
+    padding: var(--sp-6) var(--sp-4);
+  }
+
+  .auth-header h1 {
+    font-size: var(--fs-xl);
+  }
+}
+
+/* ---- Reduced motion for auth animations -------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .field input,
+  .field select {
+    transition: none;
+  }
+
+  .input-group-toggle {
+    transition: none;
+  }
+}
 
 /* ==========================================================================
    9. ALERTS & TOASTS
@@ -818,6 +1008,12 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 .dot-connected { background: var(--green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.7); }
 .dot-connecting { background: var(--gold); animation: dot-pulse 1s ease-in-out infinite; }
 .dot-disconnected { background: var(--red); }
+
+.game-stage-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
 
 @keyframes dot-pulse {
   0%, 100% { opacity: 1; }
@@ -923,20 +1119,28 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 }
 
 /* ---- Plane --------------------------------------------------------------
-   Positioning contract for Plane.jsx:
-   The plane's flight path is driven entirely by JS via three CSS custom
-   properties set as inline styles on .plane-icon, updated every animation
-   frame as the multiplier climbs:
+   Positioning contract for Plane.jsx — three nested layers so JS-driven
+   position, JS-driven pitch, and a continuous CSS wobble never fight over
+   the same `transform` property:
+
+     .plane-icon    (outer)  position only — left/bottom driven every frame
+                              by --plane-x / --plane-y, clamped in JS so the
+                              plane approaches but never touches the edge.
+     .plane-pitch   (middle) rotation only — --plane-rot, the nose-up angle
+                              as the multiplier climbs.
+     .plane-sprite  (inner)  the artwork + a small looping turbulence wobble
+                              (CSS keyframes) layered on top of the JS pitch.
 
      --plane-x   : 0 to 1   (0 = stage left edge, 1 = stage right edge)
      --plane-y   : 0 to 1   (0 = stage bottom, 1 = stage top)
-     --plane-rot : degrees  (nose angle, e.g. -8 to -34deg as it climbs)
+     --plane-rot : degrees  (nose angle, e.g. -6 to -32deg as it climbs)
+     --plane-scale: 1 to ~1.18, growing slightly as it climbs for a subtle
+                    "coming toward camera" feel.
 
-   Clamp --plane-x to max 0.82 and --plane-y to max 0.78 in JS so the plane
-   NEVER reaches the stage edges — it should look like it's always about to
-   fly off-screen but never does, until it crashes. A curved SVG path
-   (.trail-path) can be drawn through the same coordinate space for the
-   climbing trail.
+   Clamp --plane-x to max 0.82 and --plane-y to max 0.78 in JS. A curved SVG
+   path (.trail-path) is drawn through the same coordinate space, and
+   .plane-shadow tracks --plane-x on the ground, shrinking/fading with
+   altitude.
    -------------------------------------------------------------------- */
 
 .plane-track {
@@ -958,11 +1162,30 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   stroke-linecap: round;
   opacity: 0.45;
   stroke-dasharray: 6 8;
+  transition: opacity var(--dur-base) var(--ease-out);
 }
 .trail-path.trail-active {
   opacity: 0.85;
   stroke-dasharray: none;
 }
+
+/* Ground shadow — tracks the plane's horizontal position, shrinks and
+   fades as altitude (--plane-y) increases. */
+.plane-shadow {
+  position: absolute;
+  bottom: 6%;
+  width: 46px;
+  height: 12px;
+  left: calc(8% + var(--plane-x, 0) * 74%);
+  transform: translateX(-50%) scaleX(var(--shadow-scale, 1));
+  background: radial-gradient(ellipse at center, rgba(20, 25, 40, 0.35), transparent 70%);
+  opacity: var(--shadow-opacity, 0.3);
+  border-radius: var(--radius-pill);
+  transition: left 120ms ease-out, transform 120ms ease-out, opacity 120ms ease-out;
+  z-index: 1;
+  pointer-events: none;
+}
+@media (min-width: 768px) { .plane-shadow { width: 60px; height: 14px; } }
 
 .plane-icon {
   position: absolute;
@@ -970,55 +1193,79 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   height: 64px;
   left: calc(8% + var(--plane-x, 0) * 74%);
   bottom: calc(10% + var(--plane-y, 0) * 68%);
-  background-image: url("../src/assets/plane.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  transform: translate(-50%, 50%) rotate(var(--plane-rot, -6deg));
-  transform-origin: center;
-  will-change: left, bottom, transform;
-  transition: left 90ms linear, bottom 90ms linear, transform 90ms linear;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
+  transform: translate(-50%, 50%);
+  will-change: left, bottom;
+  transition: left 120ms ease-out, bottom 120ms ease-out;
   z-index: 2;
 }
 
 @media (min-width: 768px) { .plane-icon { width: 84px; height: 84px; } }
 @media (min-width: 1024px) { .plane-icon { width: 104px; height: 104px; } }
 
-/* Idle bob before round starts / while climbing steadily, layered on top
-   of the JS-driven transform via a pseudo wrapper class toggle. Keep this
-   subtle — the primary motion must always read as JS-driven, not looping. */
-.plane-icon.plane-flying {
-  animation: plane-bob 1.8s ease-in-out infinite;
+.plane-pitch {
+  width: 100%;
+  height: 100%;
+  transform: rotate(var(--plane-rot, -6deg)) scale(var(--plane-scale, 1));
+  transform-origin: center;
+  transition: transform 120ms ease-out;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
 }
-@keyframes plane-bob {
-  0%, 100% { margin-top: 0px; }
-  50% { margin-top: -4px; }
+
+.plane-sprite {
+  width: 100%;
+  height: 100%;
+  background-image: url("../src/assets/plane.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Continuous light turbulence, independent of the JS-driven pitch above —
+   this is the only looping animation in the assembly, and it's subtle by
+   design so the JS-driven climb always reads as the primary motion. */
+.plane-sprite.wobble {
+  animation: plane-wobble 1.6s ease-in-out infinite;
+}
+@keyframes plane-wobble {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(2.5deg) translateY(-3px); }
+}
+
+/* Engine flicker while climbing hard (visual tension near the top of the
+   clamp range) — toggled via .plane-sprite.strain from Plane.jsx. */
+.plane-sprite.strain {
+  animation: plane-wobble 0.9s ease-in-out infinite;
 }
 
 .plane-icon.plane-crashed {
-  animation: plane-fall 0.5s var(--ease-in-out) forwards;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25)) saturate(0.4) brightness(0.85);
+  animation: plane-fall 0.6s var(--ease-in-out) forwards;
+}
+.plane-icon.plane-crashed .plane-sprite {
+  animation: none;
+  filter: saturate(0.35) brightness(0.8);
 }
 @keyframes plane-fall {
-  0% { opacity: 1; }
-  60% { transform: translate(-50%, 50%) rotate(70deg) scale(1.05); opacity: 1; }
-  100% { transform: translate(-50%, 120%) rotate(120deg) scale(0.8); opacity: 0; }
+  0% { transform: translate(-50%, 50%) rotate(0deg); opacity: 1; }
+  55% { transform: translate(-50%, 90%) rotate(95deg) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, 220%) rotate(150deg) scale(0.75); opacity: 0; }
 }
 
-/* Small exhaust / smoke puff trailing the plane while climbing */
+/* Exhaust wisps trailing the plane while climbing — elongated and blurred
+   rather than plain dots, drifting opposite the flight direction. */
 .plane-smoke {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-circle);
-  background: rgba(255, 255, 255, 0.5);
+  width: 16px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.55);
+  filter: blur(1px);
   animation: smoke-puff 900ms ease-out forwards;
   z-index: 1;
+  pointer-events: none;
 }
 @keyframes smoke-puff {
-  0% { opacity: 0.6; transform: scale(0.4); }
-  100% { opacity: 0; transform: scale(1.8) translateY(6px); }
+  0% { opacity: 0.55; transform: scale(0.5) translate(0, 0); }
+  100% { opacity: 0; transform: scale(1.6) translate(-14px, 10px); }
 }
 
 
@@ -1035,7 +1282,10 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 .crash-burst {
   position: absolute;
-  font-size: 2rem;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.25rem;
   color: var(--red);
   animation: burst-pop 0.4s var(--ease-out);
   z-index: 4;

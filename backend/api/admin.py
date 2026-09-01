@@ -23,7 +23,7 @@ class UserAdmin(DjangoUserAdmin):
 class WalletAdmin(admin.ModelAdmin):
     list_display = ("user", "balance", "currency", "updated_at")
     search_fields = ("user__username",)
-    readonly_fields = ("balance",)  # never hand-edit balances outside WalletService
+    
 
 
 @admin.register(WalletTransaction)

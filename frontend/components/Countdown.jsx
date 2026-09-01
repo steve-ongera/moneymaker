@@ -1,3 +1,4 @@
+//components/Countdown.jsx 
 import { useEffect, useState } from "react";
 
 export default function Countdown({ closesAt }) {
@@ -19,8 +20,14 @@ export default function Countdown({ closesAt }) {
   if (!closesAt) return null;
 
   return (
-    <div className="countdown">
-      <i className="bi bi-hourglass-split" /> Betting closes in {remaining.toFixed(1)}s
+    <div className="countdown countdown-compact">
+      <span className="countdown-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </span>
+      Betting closes in <span className="countdown-number">{remaining.toFixed(1)}s</span>
     </div>
   );
 }

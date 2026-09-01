@@ -7,7 +7,11 @@ export default function LiveBets() {
 
   return (
     <div className="live-bets">
-      <h3><i className="bi bi-people-fill" /> Your Bet — {round?.round_id || "—"}</h3>
+      <div className="live-bets-header">
+        <h3><i className="bi bi-people-fill" /> Your Bet</h3>
+        <span className="live-bets-count">{round?.round_id || "—"}</span>
+      </div>
+
       {activeBet ? (
         <BetCard bet={activeBet} />
       ) : (

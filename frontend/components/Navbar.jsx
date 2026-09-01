@@ -13,6 +13,8 @@ export default function Navbar() {
     navigate("/login");
   };
 
+  const openSidebar = () => window.dispatchEvent(new CustomEvent("toggle-sidebar"));
+
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-brand">
@@ -33,16 +35,25 @@ export default function Navbar() {
         {isAuthenticated ? (
           <>
             <span className="navbar-balance">
-              <i className="bi bi-cash-coin" /> KSh {Number(wallet.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              <span className="currency">KSh</span> {Number(wallet.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
-            <button className="btn btn-ghost" onClick={handleLogout}>
+            <button className="btn btn-ghost hide-mobile" onClick={handleLogout}>
               <i className="bi bi-box-arrow-right" /> Logout
+            </button>
+            {/* Mobile-only: opens the Sidebar drawer. Hidden at 1024px+ where
+                the persistent sidebar rail takes over (see main.css). */}
+            <button
+              className="navbar-menu-btn"
+              onClick={openSidebar}
+              aria-label="Open menu"
+            >
+              <i className="bi bi-list" style={{ fontSize: "1.5rem" }} />
             </button>
           </>
         ) : (
           <>
-            <Link to="/login" className="btn btn-ghost">Login</Link>
-            <Link to="/register" className="btn btn-primary">Register</Link>
+            <Link to="/login" className="btn btn-ghost btn-small">Login</Link>
+            <Link to="/register" className="btn btn-primary btn-small">Register</Link>
           </>
         )}
       </div>

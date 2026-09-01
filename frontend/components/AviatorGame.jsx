@@ -17,6 +17,12 @@ const STATUS_LABEL = {
   SETTLED: "Round settled",
 };
 
+const CONNECTION_LABEL = {
+  connected: "Live",
+  connecting: "Connecting...",
+  disconnected: "Reconnecting...",
+};
+
 export default function AviatorGame() {
   const { round, multiplier, connectionStatus, lastCrash } = useAviator();
 
@@ -28,26 +34,39 @@ export default function AviatorGame() {
     <div className="aviator-game">
       <Notification />
 
-      <div className="connection-badge">
-        <span className={`dot dot-${connectionStatus}`} />
-        {connectionStatus === "connected" ? "Live" : connectionStatus === "connecting" ? "Connecting..." : "Reconnecting..."}
+      {/* grid-area: stage — connection badge lives here, not as its own
+          grid child, so it doesn't need a named area of its own */}
+      <div className="game-stage-wrap">
+        <div className="connection-badge">
+          <span className={`dot dot-${connectionStatus}`} />
+          {CONNECTION_LABEL[connectionStatus] || "Reconnecting..."}
+        </div>
+
+        <div className="game-stage">
+          <div className="game-status-label">{STATUS_LABEL[status] || "Loading..."}</div>
+
+          <div className="game-stage-grid" aria-hidden="true" />
+
+          <Multiplier value={multiplier} status={status} />
+
+          <Plane multiplier={multiplier} crashed={crashed} running={running} />
+          <CrashAnimation crashed={crashed} crashMultiplier={lastCrash} />
+
+          {status === "BETTING_OPEN" && <Countdown closesAt={round?.betting_closes_at} />}
+        </div>
       </div>
 
+      {/* grid-area: history */}
       <GameHistory />
 
-      <div className="game-stage">
-        <div className="game-status-label">{STATUS_LABEL[status] || "Loading..."}</div>
-
-        <Multiplier value={multiplier} status={status} />
-
-        <Plane multiplier={multiplier} crashed={crashed} running={running} />
-        <CrashAnimation crashed={crashed} crashMultiplier={lastCrash} />
-
-        {status === "BETTING_OPEN" && <Countdown closesAt={round?.betting_closes_at} />}
+      {/* grid-area: panel — bet slate stays visible/sticky on desktop,
+          sits right after the stage on mobile since it's the primary action */}
+      <div className="betting-panel-wrap">
+        <BettingPanel />
       </div>
 
+      {/* grid-area: bets */}
       <LiveBets />
-      <BettingPanel />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+//components/CashoutButton.jsx
 import { useState } from "react";
 import { useAviator } from "../hooks/useAviator.js";
 import { useWallet } from "../hooks/useWallet.js";
@@ -13,7 +14,7 @@ export default function CashoutButton() {
 
   const handleCashout = async () => {
     setError("");
-    setCashing(true); // immediate UI feedback — never shown as success until server confirms
+    setCashing(true);
     try {
       await cashOutBet();
       wallet.refreshWallet();
@@ -27,7 +28,11 @@ export default function CashoutButton() {
   if (activeBet?.status === "CASHED_OUT") {
     return (
       <div className="cashout-result success">
-        <i className="bi bi-check-circle-fill" /> Cashed out at {activeBet.cashout_multiplier}x — +KSh {activeBet.payout}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Cashed out at {activeBet.cashout_multiplier}x — +KSh {activeBet.payout}
       </div>
     );
   }
@@ -35,20 +40,32 @@ export default function CashoutButton() {
   if (activeBet?.status === "LOST") {
     return (
       <div className="cashout-result lost">
-        <i className="bi bi-x-circle-fill" /> Bet lost
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        Bet lost
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="cashout-section">
       {error && <div className="alert alert-error">{error}</div>}
       <button
         className="btn btn-cashout btn-block"
         onClick={handleCashout}
         disabled={!running || cashing}
       >
-        {cashing ? "Cashing out..." : `CASH OUT — KSh ${estimatedPayout}`}
+        {cashing ? (
+          <>
+            <span className="spinner spinner-sm" />
+            Cashing out...
+          </>
+        ) : (
+          <>CASH OUT — KSh {estimatedPayout}</>
+        )}
       </button>
     </div>
   );

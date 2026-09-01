@@ -26,6 +26,12 @@ export default function CrashAnimation({ crashed, crashMultiplier }) {
 
   return (
     <div className="crash-animation">
+      <div className="crash-flash" />
+
+      <div className="crash-burst">
+        <i className="bi bi-stars" />
+      </div>
+
       {particles.map((p) => (
         <span
           key={p.id}
@@ -37,6 +43,7 @@ export default function CrashAnimation({ crashed, crashMultiplier }) {
           }}
         />
       ))}
+
       <div className="crash-label">Flew away @ {crashMultiplier?.toFixed(2)}x</div>
     </div>
   );

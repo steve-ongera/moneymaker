@@ -16,6 +16,7 @@ export default function BettingPanel() {
 
   const bettingOpen = round?.status === "BETTING_OPEN";
   const hasActiveBet = activeBet && activeBet.status === "ACTIVE";
+  const locked = !bettingOpen || hasActiveBet;
 
   const adjust = (delta) => setAmount((a) => Math.max(10, a + delta));
 
@@ -35,22 +36,39 @@ export default function BettingPanel() {
   return (
     <div className="betting-panel">
       <div className="amount-control">
-        <button className="btn btn-icon" onClick={() => adjust(-10)} disabled={!bettingOpen || hasActiveBet}>-</button>
+        <button
+          type="button"
+          className="amount-control-btn"
+          onClick={() => adjust(-10)}
+          disabled={locked}
+          aria-label="Decrease amount"
+        >
+          −
+        </button>
         <input
           type="number"
           value={amount}
           onChange={(e) => setAmount(Math.max(10, Number(e.target.value)))}
-          disabled={!bettingOpen || hasActiveBet}
+          disabled={locked}
         />
-        <button className="btn btn-icon" onClick={() => adjust(10)} disabled={!bettingOpen || hasActiveBet}>+</button>
+        <button
+          type="button"
+          className="amount-control-btn"
+          onClick={() => adjust(10)}
+          disabled={locked}
+          aria-label="Increase amount"
+        >
+          +
+        </button>
       </div>
 
       <div className="quick-amounts">
         {QUICK_AMOUNTS.map((a) => (
           <button
             key={a}
-            className="btn btn-chip"
-            disabled={!bettingOpen || hasActiveBet}
+            type="button"
+            className={`btn btn-chip${amount === a ? " active" : ""}`}
+            disabled={locked}
             onClick={() => setAmount(a)}
           >
             {a}
@@ -64,6 +82,7 @@ export default function BettingPanel() {
         <CashoutButton />
       ) : (
         <button
+          type="button"
           className="btn btn-bet btn-block"
           onClick={handleBet}
           disabled={!bettingOpen || placing}
