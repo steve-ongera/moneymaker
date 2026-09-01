@@ -6,7 +6,7 @@ import logoImg from "../src/assets/moneymaker_logo.png";
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +19,7 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
-      await login(username, password);
+      await login(email, password);
       navigate("/play");
     } catch (err) {
       setError(err.message || "Login failed. Check your credentials.");
@@ -49,28 +49,28 @@ export default function Login() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <div className="auth-header">
           <img src={logoImg} alt="MoneyMaker Logo" className="auth-logo" />
-         
           <p className="auth-subtitle">Sign in to keep playing</p>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <div className="field">
-          <label htmlFor="login-username">
+          <label htmlFor="login-email">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
             </svg>
-            Username
+            Email
           </label>
           <input
-            id="login-username"
+            id="login-email"
+            type="email"
             className="input"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
             autoFocus
-            placeholder="Enter your username"
+            placeholder="your@email.com"
           />
         </div>
 
@@ -103,9 +103,14 @@ export default function Login() {
           </div>
         </div>
 
-        <button 
-          className="btn btn-primary btn-block btn-large" 
-          type="submit" 
+        <p className="auth-terms-disclaimer">
+          By signing in, you confirm that you are at least 18 years old and agree to our{" "}
+          <Link to="/terms">Terms &amp; Conditions</Link>.
+        </p>
+
+        <button
+          className="btn btn-primary btn-block btn-large"
+          type="submit"
           disabled={submitting}
         >
           {submitting ? (

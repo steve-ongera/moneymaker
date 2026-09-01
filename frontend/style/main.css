@@ -889,6 +889,19 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   color: transparent;
 }
 
+.auth-terms-disclaimer {
+  font-size: var(--fs-xs, 12px);
+  color: var(--text-dim, #888);
+  text-align: center;
+  margin: var(--sp-3, 12px) 0;
+  line-height: 1.4;
+}
+
+.auth-terms-disclaimer a {
+  color: var(--brand-1, #ea5d0b);
+  text-decoration: underline;
+}
+
 /* ---- 2-column form grid (for registration) ----------------------------- */
 
 .auth-form-grid {

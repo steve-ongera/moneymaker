@@ -1,13 +1,13 @@
 #api/urls.py
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from . import views
 
 urlpatterns = [
     # Auth
     path("auth/register/", views.RegisterView.as_view(), name="auth-register"),
-    path("auth/login/", TokenObtainPairView.as_view(), name="auth-login"),
+    path("auth/login/", views.LoginView.as_view(), name="login"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="auth-token-refresh"),
 
     # Profile
@@ -20,10 +20,10 @@ urlpatterns = [
     # Deposits (M-Pesa STK Push)
     path("deposit/initiate/", views.DepositInitiateView.as_view(), name="deposit-initiate"),
     path("deposit/status/<str:checkout_request_id>/", views.DepositStatusView.as_view(), name="deposit-status"),
-    
+
     # M-Pesa Callbacks (Public URL - no authentication)
     path("mpesa/callback/", views.MpesaCallbackView.as_view(), name="mpesa-callback"),
-    
+
     # Withdrawals
     path("withdrawal/initiate/", views.WithdrawalInitiateView.as_view(), name="withdrawal-initiate"),
 

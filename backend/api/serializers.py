@@ -13,27 +13,70 @@ MIN_WITHDRAWAL_AMOUNT = Decimal("100")
 # ============================================================
 # Auth / Users
 # ============================================================
+from django.contrib.auth import authenticate
+
+from .utils import generate_unique_username
+
+
+from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
+
+from .models import User, Wallet
+from .utils import generate_unique_username
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ("id", "username", "email", "phone_number", "password", "password2")
+        fields = ("id", "email", "phone_number", "password", "password2")
 
     def validate(self, attrs):
         if attrs["password"] != attrs.pop("password2"):
             raise serializers.ValidationError({"password2": "Passwords do not match."})
         return attrs
 
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+    def validate_phone_number(self, value):
+        # Coerce blank string to None so it doesn't collide with the
+        # unique constraint when multiple users leave phone blank.
+        value = value or None
+        if value and User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError("An account with this phone number already exists.")
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop("password")
-        user = User(**validated_data)
+        username = generate_unique_username(validated_data["email"], User)
+        user = User(username=username, **validated_data)
         user.set_password(password)
         user.save()
         Wallet.objects.get_or_create(user=user)
         return user
 
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user = authenticate(
+            request=self.context.get("request"),
+            email=attrs["email"],
+            password=attrs["password"],
+        )
+        if not user:
+            raise serializers.ValidationError("Invalid email or password.")
+        if not user.is_active:
+            raise serializers.ValidationError("This account is disabled.")
+        attrs["user"] = user
+        return attrs
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import * as api from "../services/api.js";
 import { tokenStore } from "../services/api.js";
 
@@ -29,14 +29,14 @@ export function AuthProvider({ children }) {
     loadProfile();
   }, [loadProfile]);
 
-  const login = async (username, password) => {
-    await api.login(username, password);
+  const login = async (email, password) => {
+    await api.login(email, password);
     await loadProfile();
   };
 
   const register = async (payload) => {
     await api.register(payload);
-    await login(payload.username, payload.password);
+    await login(payload.email, payload.password);
   };
 
   const logout = () => {
@@ -49,4 +49,10 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
+  return ctx;
 }

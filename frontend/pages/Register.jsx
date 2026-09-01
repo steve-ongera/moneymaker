@@ -3,11 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import logo from "../src/assets/moneymaker_logo.png";
 
+const PHONE_RE = /^\+?\d{9,15}$/;
+
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: "", email: "", phone_number: "", password: "", password2: "",
+    email: "", phone_number: "", password: "", password2: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
@@ -19,25 +21,40 @@ export default function Register() {
   const togglePassword = () => setShowPassword(!showPassword);
   const togglePassword2 = () => setShowPassword2(!showPassword2);
 
+  const validate = () => {
+    if (form.password.length < 8) {
+      return "Password must be at least 8 characters.";
+    }
+    if (form.password !== form.password2) {
+      return "Passwords do not match.";
+    }
+    if (form.phone_number && !PHONE_RE.test(form.phone_number)) {
+      return "Enter a valid phone number, e.g. +2547XXXXXXXX.";
+    }
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (form.password !== form.password2) {
-      setError("Passwords do not match.");
+
+    const clientError = validate();
+    if (clientError) {
+      setError(clientError);
       return;
     }
+
     setSubmitting(true);
     try {
       await register(form);
       navigate("/play");
     } catch (err) {
-      setError(err.message || "Registration failed.");
+      setError(typeof err.message === "string" ? err.message : "Registration failed.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Eye icon SVG component
   const EyeIcon = ({ show }) => (
     <svg viewBox="0 0 24 24">
       {show ? (
@@ -60,7 +77,6 @@ export default function Register() {
         <div className="auth-header">
           <h1>
             <img src={logo} alt="MoneyMaker Logo" className="auth-logo" width="32" height="32" />
-            
           </h1>
           <p className="auth-subtitle">Create your account and start winning</p>
         </div>
@@ -68,25 +84,6 @@ export default function Register() {
         {error && <div className="alert alert-error">{error}</div>}
 
         <div className="auth-form-grid">
-          <div className="field">
-            <label htmlFor="username">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              Username
-            </label>
-            <input
-              id="username"
-              className="input"
-              value={form.username}
-              onChange={update("username")}
-              required
-              autoFocus
-              placeholder="Choose a username"
-            />
-          </div>
-
           <div className="field">
             <label htmlFor="email">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -102,6 +99,7 @@ export default function Register() {
               value={form.email}
               onChange={update("email")}
               required
+              autoFocus
               placeholder="your@email.com"
             />
           </div>

@@ -44,6 +44,29 @@ function resolveQueue(error, token = null) {
   pendingQueue = [];
 }
 
+// Turns any DRF error response body into a single readable string.
+// Handles: {"error": {"message": "..."}}, {"detail": "..."},
+// {"non_field_errors": ["..."]}, and field-level errors like
+// {"password": ["This password is too common."]}.
+function extractErrorMessage(data) {
+  if (!data) return "Something went wrong. Please try again.";
+  if (typeof data === "string") return data;
+  if (data.error?.message) return data.error.message;
+  if (data.detail) return data.detail;
+  if (Array.isArray(data.non_field_errors) && data.non_field_errors[0]) {
+    return data.non_field_errors[0];
+  }
+  const firstKey = Object.keys(data)[0];
+  if (firstKey) {
+    const val = data[firstKey];
+    if (Array.isArray(val) && typeof val[0] === "string") {
+      return val[0];
+    }
+    if (typeof val === "string") return val;
+  }
+  return "Something went wrong. Please try again.";
+}
+
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -88,7 +111,7 @@ client.interceptors.response.use(
       return Promise.reject({ forbidden: true, message: "You don't have permission to do that." });
     }
 
-    const message = error.response.data?.error?.message || "Something went wrong. Please try again.";
+    const message = extractErrorMessage(error.response.data);
     return Promise.reject({ message, status: error.response.status, raw: error.response.data });
   }
 );
@@ -101,8 +124,8 @@ export async function register(payload) {
   return data;
 }
 
-export async function login(username, password) {
-  const { data } = await client.post("/auth/login/", { username, password });
+export async function login(email, password) {
+  const { data } = await client.post("/auth/login/", { email, password });
   tokenStore.set(data.access, data.refresh);
   return data;
 }
@@ -154,7 +177,7 @@ export async function pollDepositStatus(checkoutRequestId, onSuccess, onError, o
     attempts++;
     try {
       const response = await checkDepositStatus(checkoutRequestId);
-      
+
       if (response.status === "COMPLETED") {
         clearInterval(poll);
         if (onSuccess) onSuccess(response);
@@ -164,7 +187,7 @@ export async function pollDepositStatus(checkoutRequestId, onSuccess, onError, o
         if (onError) onError(response.data?.result_desc || "Payment failed");
         return;
       }
-      
+
       // If max attempts reached, timeout
       if (attempts >= maxAttempts) {
         clearInterval(poll);

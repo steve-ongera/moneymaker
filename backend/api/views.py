@@ -30,7 +30,7 @@ from .serializers import (
     WalletSerializer,
     WalletTransactionSerializer,
     WithdrawalInitiateSerializer,
-    WithdrawalSerializer,
+    WithdrawalSerializer,LoginSerializer,
 )
 from .wallet import DuplicateRequest, InsufficientBalance, InvalidBetState, WalletService
 from asgiref.sync import async_to_sync
@@ -58,12 +58,54 @@ def _log(user, action, meta=None, request=None):
 # ============================================================
 # Auth
 # ============================================================
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+import logging
+
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+from .models import User
+from .serializers import RegisterSerializer
+
+logger = logging.getLogger(__name__)
+
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.warning(f"Register validation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserSerializer(user).data,
+        })
+        
+        
 class MeView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
