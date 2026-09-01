@@ -1,4 +1,3 @@
-// api.js
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
@@ -31,39 +30,6 @@ client.interceptors.request.use((config) => {
   }
   return config;
 });
-
-// ============================================================
-// Error normalization
-// ============================================================
-// Backend errors can arrive in different shapes:
-//   - Your app's standard shape:      { error: { message: "..." } }
-//   - DRF default validation errors:  { field_name: ["msg", ...] }
-//   - DRF generic errors:             { detail: "..." }
-// This always resolves to a plain string so components never have to
-// guess (or accidentally render a raw object as a React child).
-function extractErrorMessage(data) {
-  if (!data) return "Something went wrong. Please try again.";
-
-  if (data.error?.message && typeof data.error.message === "string") {
-    return data.error.message;
-  }
-
-  // DRF default validation-error shape: {field: ["msg", ...]}
-  const firstKey = Object.keys(data)[0];
-  if (firstKey) {
-    const val = data[firstKey];
-    if (Array.isArray(val) && typeof val[0] === "string") {
-      return `${firstKey}: ${val[0]}`;
-    }
-    if (typeof val === "string") {
-      return `${firstKey}: ${val}`;
-    }
-  }
-
-  if (typeof data.detail === "string") return data.detail;
-
-  return "Something went wrong. Please try again.";
-}
 
 // Queue concurrent requests while a token refresh is in flight, so we don't fire
 // multiple refresh calls at once.
@@ -122,7 +88,7 @@ client.interceptors.response.use(
       return Promise.reject({ forbidden: true, message: "You don't have permission to do that." });
     }
 
-    const message = extractErrorMessage(error.response.data);
+    const message = error.response.data?.error?.message || "Something went wrong. Please try again.";
     return Promise.reject({ message, status: error.response.status, raw: error.response.data });
   }
 );

@@ -1,3 +1,5 @@
+//context/GameContext.jsx
+//context/GameContext.jsx
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import * as api from "../services/api.js";
 import { AuthContext } from "./AuthContext.jsx";
@@ -44,7 +46,9 @@ export function GameProvider({ children }) {
       switch (msg.type) {
         case "state.sync": {
           setRound(msg.round);
-          setActiveBet(msg.active_bet);
+          // msg.active_bet comes from BetSerializer, keyed "id" — add "bet_id" so
+          // cashOutBet() (and any other code reading activeBet.bet_id) still works.
+          setActiveBet(msg.active_bet ? { ...msg.active_bet, bet_id: msg.active_bet.id } : null);
           if (msg.wallet_balance) wallet?.setBalanceFromServer(msg.wallet_balance);
           if (msg.round?.status === "RUNNING") {
             runningSinceRef.current = new Date(msg.server_time);
@@ -152,7 +156,9 @@ export function GameProvider({ children }) {
       const data = await api.getCurrentRound();
       syncFromServerTime(data.server_time);
       setRound(data.round);
-      setActiveBet(data.active_bet);
+      // data.active_bet comes from BetSerializer, keyed "id" — add "bet_id" so
+      // cashOutBet() (and any other code reading activeBet.bet_id) still works.
+      setActiveBet(data.active_bet ? { ...data.active_bet, bet_id: data.active_bet.id } : null);
       if (data.wallet_balance) wallet?.setBalanceFromServer(data.wallet_balance);
       if (data.round?.status === "RUNNING") {
         runningSinceRef.current = new Date(data.server_time);
@@ -186,10 +192,15 @@ export function GameProvider({ children }) {
   }, []);
 
   const cashOutBet = useCallback(async () => {
-    if (!activeBet) return;
+    if (!activeBet?.bet_id) return;
     const requestId = crypto.randomUUID();
     const bet = await api.cashOut({ betId: activeBet.bet_id, requestId });
-    setActiveBet({ ...activeBet, status: bet.status, cashout_multiplier: bet.cashout_multiplier, payout: bet.payout });
+    setActiveBet((prev) => ({
+      ...prev,
+      status: bet.status,
+      cashout_multiplier: bet.cashout_multiplier,
+      payout: bet.payout,
+    }));
     return bet;
   }, [activeBet]);
 
