@@ -35,8 +35,12 @@ export default function AviatorGame() {
     <div className="aviator-game">
       <Notification />
 
-      {/* grid-area: stage — connection badge lives here, not as its own
-          grid child, so it doesn't need a named area of its own */}
+      {/* grid-area: history - moved ABOVE the game stage */}
+      <div className="game-history">
+        <GameHistory />
+      </div>
+
+      {/* grid-area: stage — connection badge lives here */}
       <div className="game-stage-wrap">
         <div className="connection-badge">
           <span className={`dot dot-${connectionStatus}`} />
@@ -62,17 +66,15 @@ export default function AviatorGame() {
         </div>
       </div>
 
-      {/* grid-area: history */}
-      <GameHistory />
-
-      {/* grid-area: panel — bet slate stays visible/sticky on desktop,
-          sits right after the stage on mobile since it's the primary action */}
+      {/* grid-area: panel — bet slate stays visible/sticky on desktop */}
       <div className="betting-panel-wrap">
         <BettingPanel />
       </div>
 
       {/* grid-area: bets */}
-      <LiveBets />
+      <div className="live-bets">
+        <LiveBets />
+      </div>
     </div>
   );
 }

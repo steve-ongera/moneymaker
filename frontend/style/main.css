@@ -13,7 +13,7 @@
      9.  Alerts & Toast notifications
      10. Aviator game — stage, sky, plane, multiplier, countdown — UPDATED
      11. Crash animation
-     12. Game history chips
+     12. Game history chips — UPDATED (smaller, aligned with live bets)
      13. Betting panel (BettingPanel / CashoutButton)
      14. Live bets / Bet cards
      15. Betting history page & grid
@@ -162,12 +162,6 @@
   --z-toast: 60;
   --z-modal: 80;
 }
-
-/* Breakpoint reference (used throughout via min-width, mobile-first):
-   --bp-sm: 480px   phones (large)
-   --bp-md: 768px   tablets / small laptop split
-   --bp-lg: 1024px  laptop
-   --bp-xl: 1280px  desktop                                                */
 
 
 /* ==========================================================================
@@ -1297,31 +1291,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   }
 }
 
-/* ---- Plane --------------------------------------------------------------
-   Positioning contract for Plane.jsx — three nested layers so JS-driven
-   position, JS-driven pitch, and a continuous CSS wobble never fight over
-   the same `transform` property:
-
-     .plane-icon    (outer)  position only — left/bottom driven every frame
-                              by --plane-x / --plane-y, clamped in JS so the
-                              plane approaches but never touches the edge.
-     .plane-pitch   (middle) rotation only — --plane-rot, the nose-up angle
-                              as the multiplier climbs.
-     .plane-sprite  (inner)  the artwork + a small looping turbulence wobble
-                              (CSS keyframes) layered on top of the JS pitch.
-
-     --plane-x   : 0 to 1   (0 = stage left edge, 1 = stage right edge)
-     --plane-y   : 0 to 1   (0 = stage bottom, 1 = stage top)
-     --plane-rot : degrees  (nose angle, e.g. -6 to -32deg as it climbs)
-     --plane-scale: 1 to ~1.18, growing slightly as it climbs for a subtle
-                    "coming toward camera" feel.
-
-   Clamp --plane-x to max 0.82 and --plane-y to max 0.78 in JS. A curved SVG
-   path (.trail-path) is drawn through the same coordinate space, and
-   .plane-shadow tracks --plane-x on the ground, shrinking/fading with
-   altitude.
-   -------------------------------------------------------------------- */
-
+/* ---- Plane -------------------------------------------------------------- */
 .plane-track {
   position: absolute;
   inset: 0;
@@ -1348,8 +1318,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   stroke-dasharray: none;
 }
 
-/* Ground shadow — tracks the plane's horizontal position, shrinks and
-   fades as altitude (--plane-y) increases. */
 .plane-shadow {
   position: absolute;
   bottom: 6%;
@@ -1399,9 +1367,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   background-position: center;
 }
 
-/* Continuous light turbulence, independent of the JS-driven pitch above —
-   this is the only looping animation in the assembly, and it's subtle by
-   design so the JS-driven climb always reads as the primary motion. */
 .plane-sprite.wobble {
   animation: plane-wobble 1.6s ease-in-out infinite;
 }
@@ -1410,8 +1375,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   50% { transform: rotate(2.5deg) translateY(-3px); }
 }
 
-/* Engine flicker while climbing hard (visual tension near the top of the
-   clamp range) — toggled via .plane-sprite.strain from Plane.jsx. */
 .plane-sprite.strain {
   animation: plane-wobble 0.9s ease-in-out infinite;
 }
@@ -1429,8 +1392,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   100% { transform: translate(-50%, 220%) rotate(150deg) scale(0.75); opacity: 0; }
 }
 
-/* Exhaust wisps trailing the plane while climbing — elongated and blurred
-   rather than plain dots, drifting opposite the flight direction. */
 .plane-smoke {
   position: absolute;
   width: 16px;
@@ -1526,26 +1487,45 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   12. GAME HISTORY CHIPS
+   12. GAME HISTORY CHIPS — UPDATED (smaller, aligned with live bets)
    ========================================================================== */
 
 .game-history {
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding: var(--sp-1) 0 var(--sp-2);
+  padding: var(--sp-2) 0;
   scrollbar-width: none;
+  max-width: 100%;
 }
+
+/* On desktop, limit the width to match live bets */
+@media (min-width: 1024px) {
+  .game-history {
+    max-width: 100%;
+    padding: var(--sp-2) 0;
+  }
+}
+
 .game-history::-webkit-scrollbar { display: none; }
 
 .history-chip {
   flex-shrink: 0;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: var(--radius-pill);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   font-weight: var(--fw-bold);
   white-space: nowrap;
 }
+
+/* Smaller chips on desktop */
+@media (min-width: 1024px) {
+  .history-chip {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+}
+
 /* tiers follow standard crash-game convention:
    < 2x low, 2x–10x mid, >= 10x high */
 .chip-low  { background: var(--blue-chip-tint);   color: var(--blue-chip); }
@@ -1988,10 +1968,9 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
    22. RESPONSIVE SUMMARY
    ========================================================================== *
    Mobile-first throughout. Phones get the single-column stacked layout
-   (stage → history → panel → live bets), tablets get a two-column split
-   for bet slots, and the two-column game-grid (stage/history/bets left,
-   sticky betting panel right) only activates at 1024px, matching the
-   reference layout where the bet slate sits fixed while the stage plays.
+   (stage → history → panel → live bets), and the two-column game-grid
+   (stage left, panel right, history below stage, bets below history)
+   activates at 1024px.
    ========================================================================== */
 
 
