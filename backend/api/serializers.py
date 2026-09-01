@@ -105,8 +105,14 @@ class PlaceBetSerializer(serializers.Serializer):
 
 
 class CashoutSerializer(serializers.Serializer):
-    bet_id = serializers.UUIDField()
-    request_id = serializers.CharField(max_length=64)
+    bet_id = serializers.UUIDField(error_messages={
+        "invalid": "bet_id must be a valid UUID.",
+        "required": "bet_id is required.",
+    })
+    request_id = serializers.CharField(max_length=64, error_messages={
+        "required": "request_id is required.",
+        "blank": "request_id cannot be blank.",
+    })
 
 
 class FairnessVerifySerializer(serializers.Serializer):

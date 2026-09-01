@@ -180,7 +180,13 @@ class CashoutView(APIView):
 
     def post(self, request):
         serializer = CashoutSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            # Normalize DRF's {field: [msg, ...]} shape into your app's
+            # consistent {"error": {"message": "..."}} shape.
+            first_field, first_errors = next(iter(serializer.errors.items()))
+            message = f"{first_field}: {first_errors[0]}"
+            return Response({"error": {"message": message}}, status=status.HTTP_400_BAD_REQUEST)
+
         bet_id = serializer.validated_data["bet_id"]
         request_id = serializer.validated_data["request_id"]
 
@@ -195,8 +201,6 @@ class CashoutView(APIView):
                 {"error": {"message": "Cash-out window is closed"}}, status=status.HTTP_409_CONFLICT
             )
 
-        # Recompute the authoritative multiplier server-side from elapsed round time —
-        # never trust anything the client might have sent.
         from .game_engine import calculate_multiplier
         from decimal import Decimal
         elapsed = Decimal(str((timezone.now() - round_obj.started_at).total_seconds()))
@@ -228,7 +232,6 @@ class CashoutView(APIView):
         _log(request.user, "bet.cashout", {"bet_id": str(bet.id), "payout": str(bet.payout)}, request)
 
         return Response(BetSerializer(bet).data, status=status.HTTP_200_OK)
-
 
 class MyBetsView(generics.ListAPIView):
     serializer_class = BetSerializer
