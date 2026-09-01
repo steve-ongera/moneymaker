@@ -7,13 +7,13 @@
      3.  Typography scale & utilities
      4.  Layout shell (app-shell, app-content, containers, grid/flex utils)
      5.  Navbar
-     6.  Sidebar
+     6.  Sidebar — drawer only, small/medium screens (no border-left accents)
      7.  Buttons
-     8.  Forms & Auth pages (Login / Register) — UPDATED with toggle eye & 2-col
-     9.  Alerts & Toast notifications
-     10. Aviator game — stage, sky, plane, multiplier, countdown — UPDATED
+     8.  Forms & Auth pages (Login / Register) — toggle eye & 2-col
+     9.  Alerts & Toast notifications — no border-left accents
+     10. Aviator game — stage, sky, plane, multiplier, countdown
      11. Crash animation
-     12. Game history chips — UPDATED (scrollable on all screens)
+     12. Game history chips — scrollable on all screens
      13. Betting panel (BettingPanel / CashoutButton)
      14. Live bets / Bet cards
      15. Betting history page & grid
@@ -156,9 +156,12 @@
   --stage-h-desktop: 420px;
 
   /* ---- Z-index scale -------------------------------------------------------------*/
+  /* NOTE: --z-sidebar must stay ABOVE --z-overlay. The overlay is a full-viewport
+     click-to-close backdrop; if it sits above the drawer, it silently swallows every
+     click meant for the nav links inside the drawer. */
   --z-sticky: 20;
-  --z-sidebar: 25;
-  --z-overlay: 40;
+  --z-overlay: 30;
+  --z-sidebar: 40;
   --z-toast: 60;
   --z-modal: 80;
 }
@@ -350,6 +353,12 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   backdrop-filter: blur(10px);
 }
 
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
 .navbar-back {
   display: flex;
   align-items: center;
@@ -363,6 +372,9 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 .navbar-back svg { width: 18px; height: 18px; }
 
 .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-family: var(--font-display);
   font-weight: var(--fw-black);
   font-style: italic;
@@ -373,6 +385,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   background-clip: text;
   color: transparent;
 }
+.navbar-brand svg { stroke: var(--brand-1); }
 
 .navbar-links {
   display: none;
@@ -441,28 +454,24 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   .navbar-menu-btn { display: none; }
 }
 
-
-/* ==========================================================================
-   6. SIDEBAR
-   ========================================================================== */
-
-.sidebar {
+/* Logout in the navbar only makes sense once the sidebar drawer is disabled
+   (≥1024px) — below that, logout lives in the drawer footer instead, so it's
+   never duplicated and never shown somewhere the user can't see the rest of
+   the nav. */
+.navbar-logout-btn {
   display: none;
-  flex-direction: column;
-  gap: 2px;
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  padding: var(--sp-4) var(--sp-3);
-  background: var(--bg-deep);
-  border-right: 1px solid var(--border-subtle);
-  position: sticky;
-  top: var(--navbar-h);
-  height: calc(100vh - var(--navbar-h));
-  overflow-y: auto;
 }
 @media (min-width: 1024px) {
-  .sidebar { display: flex; }
+  .navbar-logout-btn { display: inline-flex; }
 }
+
+
+/* ==========================================================================
+   6. SIDEBAR — drawer only, small/medium screens. Never shown at ≥1024px
+   (the navbar's .navbar-links already covers navigation on laptop/desktop).
+   No border-left accents anywhere in this section — active/state styling
+   is done purely with background tint and text color.
+   ========================================================================== */
 
 .sidebar-link {
   display: flex;
@@ -480,23 +489,30 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-.sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+.sidebar-link svg,
+.sidebar-link i {
+  width: 18px;
+  flex-shrink: 0;
+  text-align: center;
+}
 .sidebar-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* Active state — background + text tint only, no border of any kind */
 .sidebar-link.active {
   background: var(--bg-elevated);
-  color: var(--text-primary);
-  box-shadow: inset 3px 0 0 var(--brand-2);
+  color: var(--brand-1);
+  font-weight: var(--fw-semibold);
 }
 
 .sidebar-section-label {
   font-size: var(--fs-2xs);
-  text-transform: none;
   color: var(--text-faint);
   padding: var(--sp-4) var(--sp-3) var(--sp-1);
   font-weight: var(--fw-semibold);
 }
 
-/* Mobile drawer variant, toggled by a JS class on .sidebar-drawer.open */
+/* ---- Drawer shell -------------------------------------------------------- */
+
 .sidebar-drawer {
   position: fixed;
   inset: 0 auto 0 0;
@@ -507,8 +523,12 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   background: var(--bg-deep);
   padding: var(--sp-4) var(--sp-3);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
 }
 .sidebar-drawer.open { transform: translateX(0); }
+
 .sidebar-drawer-overlay {
   position: fixed;
   inset: 0;
@@ -519,6 +539,56 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   z-index: var(--z-overlay);
 }
 .sidebar-drawer-overlay.open { opacity: 1; pointer-events: auto; }
+
+/* ---- Drawer header (brand + close button) -------------------------------- */
+
+.sidebar-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-1) var(--sp-2) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sidebar-drawer-header .navbar-brand { font-size: var(--fs-lg); }
+
+.sidebar-drawer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.sidebar-drawer-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+/* ---- Drawer link list + footer -------------------------------------------- */
+
+.sidebar-drawer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.sidebar-drawer-footer {
+  margin-top: var(--sp-3);
+}
+.sidebar-drawer-footer hr {
+  border-top: 1px solid var(--divider);
+  margin: 0 0 var(--sp-2);
+}
+
+/* ---- Hard lock: never show the drawer at laptop width and up ------------- */
+
+@media (min-width: 1024px) {
+  .sidebar-drawer,
+  .sidebar-drawer-overlay {
+    display: none;
+  }
+}
 
 
 /* ==========================================================================
@@ -622,7 +692,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   8. FORMS & AUTH PAGES — UPDATED with toggle eye & 2-column
+   8. FORMS & AUTH PAGES — toggle eye & 2-column
    ========================================================================== */
 
 .field {
@@ -905,7 +975,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   9. ALERTS & TOASTS
+   9. ALERTS & TOASTS — no border-left accents; full border + bg tint instead
    ========================================================================== */
 
 .alert {
@@ -944,7 +1014,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   gap: var(--sp-2);
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--border-strong);
   border-radius: var(--radius-md);
   padding: 12px var(--sp-4);
   box-shadow: var(--shadow-md);
@@ -954,9 +1023,20 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   pointer-events: auto;
   animation: toast-in var(--dur-slow) var(--ease-out);
 }
-.notification-success { border-left-color: var(--green); }
-.notification-error { border-left-color: var(--red); }
-.notification-crash { border-left-color: var(--gold); }
+
+/* Type accents via background tint + border color (all sides), not border-left */
+.notification-success {
+  background: var(--green-tint);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.notification-error {
+  background: var(--red-tint);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.notification-crash {
+  background: var(--gold-tint);
+  border-color: rgba(255, 181, 71, 0.4);
+}
 
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
@@ -965,7 +1045,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   10. AVIATOR GAME — STAGE / SKY / PLANE / MULTIPLIER / COUNTDOWN — UPDATED
+   10. AVIATOR GAME — STAGE / SKY / PLANE / MULTIPLIER / COUNTDOWN
    ========================================================================== */
 
 .aviator-game {
@@ -1544,7 +1624,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   12. GAME HISTORY CHIPS — UPDATED (scrollable on all screens)
+   12. GAME HISTORY CHIPS — scrollable on all screens
    ========================================================================== */
 
 .game-history {
@@ -2058,10 +2138,13 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 /* ==========================================================================
    22. RESPONSIVE SUMMARY
    ========================================================================== *
-   Mobile-first throughout. 
-   - Small screens (≤767px): Stacked layout with history below connection badge
-   - Tablets (768-1023px): History alongside connection badge, scrollable
-   - Desktop (≥1024px): Grid layout with stage/bets on left, panel on right
+   Mobile-first throughout.
+   - Small/medium screens (<1024px): Sidebar is a slide-in drawer, toggled
+     by the navbar hamburger. Navigation links are NOT shown in the navbar.
+   - Laptop/desktop (≥1024px): Drawer is hard-disabled (display: none) and
+     the navbar's .navbar-links row provides navigation instead. No
+     persistent sidebar column exists at this width — .app-content spans
+     the full width next to the navbar.
    ========================================================================== */
 
 
