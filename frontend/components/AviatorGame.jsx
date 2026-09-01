@@ -42,7 +42,7 @@ export default function AviatorGame() {
             <span className={`dot dot-${connectionStatus}`} />
             {CONNECTION_LABEL[connectionStatus] || "Reconnecting..."}
           </div>
-          <div className="game-history">
+          <div className="game-history-wrapper">
             <GameHistory />
           </div>
         </div>

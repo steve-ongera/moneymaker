@@ -13,7 +13,7 @@
      9.  Alerts & Toast notifications
      10. Aviator game — stage, sky, plane, multiplier, countdown — UPDATED
      11. Crash animation
-     12. Game history chips — UPDATED (scrollable, alongside connection badge)
+     12. Game history chips — UPDATED (scrollable on all screens)
      13. Betting panel (BettingPanel / CashoutButton)
      14. Live bets / Bet cards
      15. Betting history page & grid
@@ -972,6 +972,8 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
+  width: 100%;
+  max-width: 100%;
 }
 
 @media (min-width: 1024px) {
@@ -984,7 +986,11 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
     align-items: start;
     gap: var(--sp-4);
   }
-  .aviator-game .game-stage-wrap { grid-area: stage; }
+  .aviator-game .game-stage-wrap { 
+    grid-area: stage;
+    min-width: 0;
+    width: 100%;
+  }
   .aviator-game .live-bets { grid-area: bets; }
   .aviator-game .betting-panel-wrap { grid-area: panel; }
 }
@@ -998,16 +1004,19 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   width: 100%;
   padding: var(--sp-1) 0;
   min-height: 32px;
+  max-width: 100%;
 }
 
 .game-stage-header .connection-badge {
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.game-stage-header .game-history {
+.game-history-wrapper {
   flex: 1;
   min-width: 0;
-  padding: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 /* Mobile: stack vertically if needed */
@@ -1018,7 +1027,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
     min-height: auto;
   }
   
-  .game-stage-header .game-history {
+  .game-history-wrapper {
     flex: 1 1 100%;
     order: 2;
     padding: var(--sp-1) 0;
@@ -1026,14 +1035,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   
   .game-stage-header .connection-badge {
     order: 1;
-  }
-}
-
-/* On desktop, ensure history scrolls horizontally */
-@media (min-width: 768px) {
-  .game-stage-header .game-history {
-    max-width: 100%;
-    flex: 1;
   }
 }
 
@@ -1062,6 +1063,8 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  width: 100%;
+  min-width: 0;
 }
 
 @keyframes dot-pulse {
@@ -1541,7 +1544,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 
 /* ==========================================================================
-   12. GAME HISTORY CHIPS — UPDATED (scrollable, alongside connection badge)
+   12. GAME HISTORY CHIPS — UPDATED (scrollable on all screens)
    ========================================================================== */
 
 .game-history {
@@ -1550,16 +1553,18 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   overflow-x: auto;
   overflow-y: hidden;
   padding: var(--sp-1) 0;
-  scrollbar-width: thin;
   max-width: 100%;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-2) var(--border-subtle);
 }
 
+/* Show scrollbar on desktop */
 .game-history::-webkit-scrollbar {
-  height: 3px;
+  height: 4px;
+  display: block;
 }
 
 .game-history::-webkit-scrollbar-track {
@@ -1576,19 +1581,40 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   background: var(--brand-1);
 }
 
+/* Firefox scrollbar */
+.game-history {
+  scrollbar-color: var(--brand-2) var(--border-subtle);
+  scrollbar-width: thin;
+}
+
+/* Ensure chips don't wrap and stay in a row */
 .history-chip {
   flex-shrink: 0;
-  padding: 3px 8px;
+  padding: 3px 10px;
   border-radius: var(--radius-pill);
   font-size: var(--fs-2xs);
   font-weight: var(--fw-bold);
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
 }
 
 /* Slightly smaller chips when in the header */
 .game-stage-header .history-chip {
-  padding: 2px 7px;
+  padding: 2px 8px;
   font-size: 10px;
+  min-width: 36px;
+}
+
+/* On mobile, chips can be slightly smaller */
+@media (max-width: 767px) {
+  .history-chip {
+    padding: 2px 8px;
+    font-size: 10px;
+    min-width: 36px;
+  }
 }
 
 /* tiers follow standard crash-game convention:
@@ -2032,9 +2058,10 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 /* ==========================================================================
    22. RESPONSIVE SUMMARY
    ========================================================================== *
-   Mobile-first throughout. Phones get the single-column stacked layout
-   (stage header with connection badge + history → stage → panel → live bets).
-   Desktop (1024px+) uses grid with stage/bets on left and panel on right.
+   Mobile-first throughout. 
+   - Small screens (≤767px): Stacked layout with history below connection badge
+   - Tablets (768-1023px): History alongside connection badge, scrollable
+   - Desktop (≥1024px): Grid layout with stage/bets on left, panel on right
    ========================================================================== */
 
 
@@ -2050,74 +2077,3 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
     scroll-behavior: auto !important;
   }
 }
-
-/* ==========================================================================
-   12. GAME HISTORY CHIPS — UPDATED (scrollable, alongside connection badge)
-   ========================================================================== */
-
-.game-history {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: var(--sp-1) 0;
-  scrollbar-width: thin;
-  max-width: 100%;
-  flex: 1;
-  min-width: 0;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  /* Important: prevent flex shrink */
-  flex-shrink: 1;
-}
-
-/* Force scrollbar to always show on desktop */
-.game-history::-webkit-scrollbar {
-  height: 3px;
-  display: block;
-}
-
-.game-history::-webkit-scrollbar-track {
-  background: var(--border-subtle);
-  border-radius: var(--radius-pill);
-}
-
-.game-history::-webkit-scrollbar-thumb {
-  background: var(--brand-2);
-  border-radius: var(--radius-pill);
-}
-
-.game-history::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-1);
-}
-
-/* Firefox scrollbar */
-.game-history {
-  scrollbar-color: var(--brand-2) var(--border-subtle);
-  scrollbar-width: thin;
-}
-
-/* Ensure chips don't wrap and stay in a row */
-.history-chip {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-bold);
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Slightly smaller chips when in the header */
-.game-stage-header .history-chip {
-  padding: 2px 7px;
-  font-size: 10px;
-}
-
-/* tiers follow standard crash-game convention:
-   < 2x low, 2x–10x mid, >= 10x high */
-.chip-low  { background: var(--blue-chip-tint);   color: var(--blue-chip); }
-.chip-mid  { background: var(--purple-chip-tint); color: var(--purple-chip); }
-.chip-high { background: var(--pink-chip-tint);   color: var(--pink-chip); }
