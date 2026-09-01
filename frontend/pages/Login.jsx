@@ -1,7 +1,7 @@
-//pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
+import logoImg from "../src/assets/moneymaker_logo.png";
 
 export default function Login() {
   const { login } = useAuth();
@@ -28,7 +28,6 @@ export default function Login() {
     }
   };
 
-  // Eye icon SVG component
   const EyeIcon = ({ show }) => (
     <svg viewBox="0 0 24 24">
       {show ? (
@@ -49,14 +48,8 @@ export default function Login() {
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <div className="auth-header">
-          <h1>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
-            MoneyMaker
-          </h1>
+          <img src={logoImg} alt="MoneyMaker Logo" className="auth-logo" />
+         
           <p className="auth-subtitle">Sign in to keep playing</p>
         </div>
 

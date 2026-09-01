@@ -82,9 +82,17 @@ export default function Sidebar() {
             </svg>
           </button>
         </div>
+
         <div className="sidebar-drawer-links">
           {links}
         </div>
+
+        {/*
+          Logout lives ONLY here on small/medium screens (<1024px) — this is
+          the only nav surface at that width, since .navbar-links and
+          .navbar-logout-btn are both display:none until 1024px. Never
+          duplicate a second logout control below the 1024px breakpoint.
+        */}
         <div className="sidebar-drawer-footer">
           <hr />
           <button type="button" className="sidebar-link" onClick={handleLogout}>

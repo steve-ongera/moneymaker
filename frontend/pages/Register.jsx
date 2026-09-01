@@ -1,7 +1,7 @@
-//pages/Register.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
+import logo from "../src/assets/moneymaker_logo.png";
 
 export default function Register() {
   const { register } = useAuth();
@@ -59,12 +59,8 @@ export default function Register() {
       <form className="auth-card auth-card-wide" onSubmit={handleSubmit}>
         <div className="auth-header">
           <h1>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
-            MoneyMaker
+            <img src={logo} alt="MoneyMaker Logo" className="auth-logo" width="32" height="32" />
+            
           </h1>
           <p className="auth-subtitle">Create your account and start winning</p>
         </div>

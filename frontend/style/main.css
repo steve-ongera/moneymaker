@@ -385,7 +385,19 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   background-clip: text;
   color: transparent;
 }
-.navbar-brand svg { stroke: var(--brand-1); }
+
+/* Hide SVG icon on small screens (<1024px) */
+.navbar-brand svg { 
+  display: none;
+  stroke: var(--brand-1); 
+}
+
+/* Show SVG icon on desktop (>=1024px) */
+@media (min-width: 1024px) {
+  .navbar-brand svg { 
+    display: block; 
+  }
+}
 
 .navbar-links {
   display: none;
@@ -454,17 +466,12 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   .navbar-menu-btn { display: none; }
 }
 
-/* Logout in the navbar only makes sense once the sidebar drawer is disabled
-   (≥1024px) — below that, logout lives in the drawer footer instead, so it's
-   never duplicated and never shown somewhere the user can't see the rest of
-   the nav. */
 .navbar-logout-btn {
-  display: none;
+  display: none !important;
 }
 @media (min-width: 1024px) {
-  .navbar-logout-btn { display: inline-flex; }
+  .navbar-logout-btn { display: inline-flex !important; }
 }
-
 
 /* ==========================================================================
    6. SIDEBAR — drawer only, small/medium screens. Never shown at ≥1024px
@@ -689,8 +696,6 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   0%, 100% { box-shadow: 0 8px 20px rgba(255, 181, 71, 0.35); }
   50% { box-shadow: 0 8px 28px rgba(255, 181, 71, 0.55); }
 }
-
-
 /* ==========================================================================
    8. FORMS & AUTH PAGES — toggle eye & 2-column
    ========================================================================== */
@@ -830,10 +835,10 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 
 .auth-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
+  border-radius: 8px;
   padding: var(--sp-8) var(--sp-6);
   box-shadow: var(--shadow-lg);
 }
@@ -841,11 +846,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 /* ---- Auth card (wide / 2-column) --------------------------------------- */
 
 .auth-card-wide {
-  max-width: 560px;
-}
-
-.auth-card .navbar-brand {
-  font-size: var(--fs-2xl);
+  max-width: 580px;
 }
 
 .auth-subtitle {
@@ -858,24 +859,34 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   margin-top: var(--sp-3);
 }
 
-/* ---- Auth header ------------------------------------------------------- */
+/* ---- Auth header & Brand Logo ------------------------------------------ */
 
 .auth-header {
   text-align: center;
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-logo {
+  height: 150px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 5px;
+  filter: drop-shadow(0 4px 12px rgba(234, 93, 11, 0.25));
 }
 
 .auth-header h1 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
   font-size: var(--fs-2xl);
-  margin-bottom: var(--sp-1);
-}
-
-.auth-header h1 svg {
-  stroke: var(--brand-2);
+  font-family: var(--font-display, inherit);
+  font-weight: var(--fw-black, 800);
+  margin: 0;
+  letter-spacing: -0.02em;
+  background: var(--brand-gradient, linear-gradient(135deg, #ea5d0b, #ff8c00));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* ---- 2-column form grid (for registration) ----------------------------- */
@@ -890,8 +901,8 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   margin-bottom: 0;
 }
 
-.auth-form-grid .field:last-child {
-  margin-bottom: 0;
+.auth-form-grid .field-full {
+  grid-column: 1 / -1;
 }
 
 /* ---- Auth switch (login/register link) --------------------------------- */
@@ -930,19 +941,25 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   content: "";
   flex: 1;
   height: 1px;
-  background: var(--divider);
+  background: var(--divider, var(--border-subtle));
 }
 
 /* ---- Responsive: mobile adjustments ------------------------------------ */
 
 @media (max-width: 767px) {
+  .auth-page {
+    align-items: flex-start;
+    padding-top: 45px;
+    padding-bottom: var(--sp-2);
+  }
+
   .auth-form-grid {
     grid-template-columns: 1fr;
     gap: var(--sp-2);
   }
 
   .auth-card-wide {
-    max-width: 380px;
+    max-width: 400px;
   }
 
   .auth-card-wide .btn-large {
@@ -951,11 +968,19 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   }
 
   .auth-card {
-    padding: var(--sp-6) var(--sp-4);
+    padding: var(--sp-4) var(--sp-4);
+  }
+
+  .auth-header {
+    margin-bottom: var(--sp-3);
   }
 
   .auth-header h1 {
     font-size: var(--fs-xl);
+  }
+
+  .auth-logo {
+    height: 100px;
   }
 }
 
@@ -964,15 +989,11 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) {
   .input,
   .field input,
-  .field select {
-    transition: none;
-  }
-
+  .field select,
   .input-group-toggle {
     transition: none;
   }
 }
-
 
 /* ==========================================================================
    9. ALERTS & TOASTS — no border-left accents; full border + bg tint instead

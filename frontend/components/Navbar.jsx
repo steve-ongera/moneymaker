@@ -1,4 +1,3 @@
-//components/Navbar.jsx
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useWallet } from "../hooks/useWallet.js";
@@ -88,8 +87,6 @@ export default function Navbar() {
             <span className="navbar-balance">
               <span className="currency">KSh</span> {Number(wallet.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
-            {/* Only rendered/visible at ≥1024px (see .navbar-logout-btn in main.css).
-                Below that width, logout lives in the sidebar drawer footer instead. */}
             <button className="btn btn-ghost btn-small navbar-logout-btn" onClick={handleLogout}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -100,10 +97,7 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          <>
-            <Link to="/login" className="btn btn-ghost btn-small">Login</Link>
-            <Link to="/register" className="btn btn-primary btn-small">Register</Link>
-          </>
+          <Link to="/login" className="btn btn-primary btn-small">Login</Link>
         )}
       </div>
     </nav>

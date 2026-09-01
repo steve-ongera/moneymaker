@@ -186,7 +186,7 @@ export default function Profile() {
           <span style={styles.infoLabel}>Verified</span>
           <span style={styles.infoValue}>
             {user?.is_verified ? (
-              <span style={{ color: 'var(--green)' }}>✓ Yes</span>
+              <span style={{ color: 'var(--green)' }}> Yes</span>
             ) : (
               <span style={{ color: 'var(--text-dim)' }}>No</span>
             )}
@@ -194,98 +194,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Provably Fair Card */}
-      <div style={styles.card}>
-        <div style={styles.cardTitle}>
-          <svg style={styles.cardTitleIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <polyline points="9 12 11 14 15 10"/>
-          </svg>
-          Provably Fair — Last Round
-        </div>
-
-        {round ? (
-          <>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Round</span>
-              <span style={styles.infoValue}>#{round.round_id?.slice(-8) || '—'}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Server seed hash</span>
-              <span style={styles.infoValue}>
-                <code style={styles.code}>{round.server_seed_hash || '—'}</code>
-              </span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Client seed</span>
-              <span style={styles.infoValue}>
-                <code style={styles.code}>{round.client_seed || '—'}</code>
-              </span>
-            </div>
-            <div style={{...styles.infoRow, ...styles.infoRowLast}}>
-              <span style={styles.infoLabel}>Nonce</span>
-              <span style={styles.infoValue}>{round.nonce || '—'}</span>
-            </div>
-
-            {round.server_seed ? (
-              <div style={styles.seedSection}>
-                <div style={styles.infoRow}>
-                  <span style={styles.infoLabel}>Server seed</span>
-                  <span style={styles.infoValue}>
-                    <code style={styles.codeBlock}>{round.server_seed}</code>
-                  </span>
-                </div>
-                <div style={styles.buttonWrapper}>
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={handleVerify} 
-                    disabled={verifying}
-                    style={{ width: '100%' }}
-                  >
-                    {verifying ? (
-                      <>
-                        <span className="spinner spinner-sm" />
-                        Verifying...
-                      </>
-                    ) : (
-                      'Verify this round'
-                    )}
-                  </button>
-                </div>
-                {verifyResult && (
-                  <div style={{
-                    ...styles.alert,
-                    ...(verifyResult.is_valid ? styles.alertSuccess : styles.alertError)
-                  }}>
-                    {verifyResult.is_valid ? '✓ Valid — ' : '✗ Mismatch — '}
-                    recomputed crash: {verifyResult.recomputed_crash_multiplier}x
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={styles.emptyState}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto var(--sp-2)' }}>
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 8v4l3 3"/>
-                </svg>
-                <p style={{ margin: 0 }}>Seed reveals once the round crashes.</p>
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={styles.emptyState}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto var(--sp-2)' }}>
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <p style={{ margin: 0 }}>No round data available yet.</p>
-            <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-faint)' }}>
-              Place a bet to see round details
-            </span>
-          </div>
-        )}
-      </div>
+    
     </div>
   );
 }
