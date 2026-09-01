@@ -32,6 +32,14 @@ export default function AviatorGame() {
   const running = status === "RUNNING";
   const isBettingOpen = status === "BETTING_OPEN";
 
+  // Belt-and-suspenders on top of the GameContext fix: once crashed, the
+  // display is driven ONLY by lastCrash (set once, straight from the server
+  // message, never touched again) — never by the live `multiplier` state.
+  // That way this component structurally cannot show a stale/overwritten
+  // value on the crash screen, even if some other race slips a stray update
+  // into `multiplier` in the future.
+  const displayMultiplier = crashed ? (lastCrash ?? multiplier) : multiplier;
+
   return (
     <div className="aviator-game">
       <Notification />
@@ -53,9 +61,9 @@ export default function AviatorGame() {
 
           <div className="game-stage-grid" aria-hidden="true" />
 
-          <Multiplier value={multiplier} status={status} />
+          <Multiplier value={displayMultiplier} status={status} />
 
-          <Plane multiplier={multiplier} crashed={crashed} running={running} />
+          <Plane multiplier={displayMultiplier} crashed={crashed} running={running} />
           <CrashAnimation crashed={crashed} crashMultiplier={lastCrash} />
 
           {/* Countdown - centralized in the middle of the stage */}

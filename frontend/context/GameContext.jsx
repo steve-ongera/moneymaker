@@ -29,6 +29,12 @@ export function GameProvider({ children }) {
   const [lastCrash, setLastCrash] = useState(null);
 
   const runningSinceRef = useRef(null); // server-time Date the current round started RUNNING
+  const rafRef = useRef(null); // handle for the in-flight interpolation frame, so we can kill it synchronously
+  const statusRef = useRef(null); // mirrors round?.status for synchronous reads inside tick()
+
+  useEffect(() => {
+    statusRef.current = round?.status;
+  }, [round?.status]);
 
   const pushNotification = useCallback((notification) => {
     const id = crypto.randomUUID();
@@ -54,6 +60,12 @@ export function GameProvider({ children }) {
         }
 
         case "round.started": {
+          // A fresh round is starting — make sure no stray interpolation frame
+          // from the previous round is still queued to fire on top of this reset.
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
           setRound({
             round_id: msg.round_id,
             status: "BETTING_OPEN",
@@ -80,9 +92,21 @@ export function GameProvider({ children }) {
         }
 
         case "round.crashed": {
+          // Kill any in-flight interpolation frame immediately. Do NOT wait for
+          // the effect cleanup below (tied to round.status changing) — that
+          // runs after commit, one or more frames later, and a stray tick
+          // queued before this message can otherwise overwrite the frozen
+          // crash value with a live number (including one from the NEXT round
+          // once round.started resets things). This was the source of the
+          // multiplier/notification mismatch (e.g. showing 4.0 vs 4.6).
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          const crashValue = parseFloat(msg.crash_multiplier);
           setRound((prev) => (prev ? { ...prev, status: "CRASHED" } : prev));
-          setMultiplier(parseFloat(msg.crash_multiplier));
-          setLastCrash(parseFloat(msg.crash_multiplier));
+          setMultiplier(crashValue);
+          setLastCrash(crashValue);
           setActiveBet((prev) => (prev && prev.status === "ACTIVE" ? { ...prev, status: "LOST" } : prev));
           // Push the crash straight into the history chips instantly, instead of
           // waiting for the next REST refetch of /aviator/history/.
@@ -122,6 +146,9 @@ export function GameProvider({ children }) {
         }
 
         case "cashout.failed": {
+          // Bet stays ACTIVE so the cash-out button re-enables and the user can
+          // retry immediately, instead of freezing on a rejected attempt.
+          setActiveBet((prev) => (prev ? { ...prev, status: "ACTIVE" } : prev));
           pushNotification({ kind: "error", text: msg.reason || "Cash-out failed" });
           break;
         }
@@ -138,8 +165,14 @@ export function GameProvider({ children }) {
   // Smooth client-side interpolation between authoritative multiplier broadcasts.
   useEffect(() => {
     if (round?.status !== "RUNNING" || !runningSinceRef.current) return;
-    let raf;
+
     const tick = () => {
+      // Belt-and-suspenders: bail instantly if the round has moved on, even if
+      // this frame was already queued (via requestAnimationFrame) before the
+      // status changed. statusRef is updated synchronously via the effect
+      // above, so this check is not subject to the same lag as cleanup.
+      if (statusRef.current !== "RUNNING") return;
+
       const elapsed = (now().getTime() - runningSinceRef.current.getTime()) / 1000;
       setMultiplier((prevServerAligned) => {
         const interpolated = interpolateMultiplier(elapsed);
@@ -147,10 +180,16 @@ export function GameProvider({ children }) {
         // authoritative multiplier.update message will correct any drift anyway.
         return Math.max(prevServerAligned, interpolated);
       });
-      raf = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
   }, [round?.status, now]);
 
   // Initial load + reconnect resync via REST (covers the gap before the WS opens).
