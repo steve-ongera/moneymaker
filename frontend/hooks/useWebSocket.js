@@ -1,3 +1,4 @@
+//hooks/useWebSocket.js
 import { useCallback, useEffect, useRef, useState } from "react";
 import { tokenStore } from "../services/api.js";
 
@@ -38,6 +39,10 @@ export function useWebSocket(onMessage) {
     socketRef.current = socket;
 
     socket.onopen = () => {
+      // Ignore events from a socket that's already been superseded by a
+      // newer connect() call (e.g. StrictMode double-invoke, fast
+      // unmount/remount, or a reconnect race).
+      if (socketRef.current !== socket) return;
       setStatus("connected");
       reconnectAttemptRef.current = 0;
       heartbeatRef.current = setInterval(() => {
@@ -48,6 +53,9 @@ export function useWebSocket(onMessage) {
     };
 
     socket.onmessage = (event) => {
+      // A stale socket can still receive in-flight frames after being
+      // superseded; drop them so messages aren't processed twice.
+      if (socketRef.current !== socket) return;
       try {
         const data = JSON.parse(event.data);
         onMessageRef.current?.(data);
@@ -57,8 +65,12 @@ export function useWebSocket(onMessage) {
     };
 
     socket.onclose = () => {
-      setStatus("disconnected");
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      // If this socket has already been replaced, its closure is expected
+      // (we closed it ourselves during cleanup/reconnect) — don't touch
+      // status or schedule a reconnect on behalf of a socket nobody uses.
+      if (socketRef.current !== socket) return;
+      setStatus("disconnected");
       if (!manuallyClosedRef.current) {
         const delay = Math.min(1000 * 2 ** reconnectAttemptRef.current, MAX_RECONNECT_DELAY_MS);
         reconnectAttemptRef.current += 1;
