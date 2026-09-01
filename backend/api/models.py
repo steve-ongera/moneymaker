@@ -76,11 +76,24 @@ class Deposit(models.Model):
     method = models.CharField(max_length=32, default="MPESA")
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
     reference = models.CharField(max_length=64, unique=True)
+
+    # STK push tracking (blank/null in DEBUG-bypass deposits, where there's no
+    # real Safaricom round trip)
+    phone_number = models.CharField(max_length=20, blank=True, default="")
+    checkout_request_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    merchant_request_id = models.CharField(max_length=64, blank=True, default="")
+    mpesa_receipt = models.CharField(max_length=32, blank=True, default="")
+    result_desc = models.CharField(max_length=255, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        indexes = [models.Index(fields=["user", "status"]), models.Index(fields=["reference"])]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["reference"]),
+            models.Index(fields=["checkout_request_id"]),
+        ]
 
     def __str__(self):
         return f"Deposit {self.amount} ({self.status}) - {self.user.username}"

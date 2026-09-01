@@ -1,10 +1,13 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import Bet, GameRound, User, Wallet, WalletTransaction
+from .models import Bet, Deposit, GameRound, User, Wallet, WalletTransaction, Withdrawal
 from .validators import validate_bet_amount
+
+MIN_DEPOSIT_AMOUNT = Decimal("20")
+MIN_WITHDRAWAL_AMOUNT = Decimal("100")
 
 
 # ============================================================
@@ -53,6 +56,63 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WalletTransaction
         fields = ("id", "tx_type", "amount", "balance_after", "reference", "created_at")
+        read_only_fields = fields
+
+
+# ============================================================
+# Deposits (M-Pesa STK push)
+# ============================================================
+class DepositInitiateSerializer(serializers.Serializer):
+    amount = serializers.CharField()
+    phone_number = serializers.CharField()
+
+    def validate_amount(self, value):
+        try:
+            amount = Decimal(value)
+        except (InvalidOperation, TypeError):
+            raise serializers.ValidationError("Invalid amount.")
+        if amount < MIN_DEPOSIT_AMOUNT:
+            raise serializers.ValidationError(f"Minimum deposit is KES {MIN_DEPOSIT_AMOUNT}.")
+        return amount
+
+    def validate_phone_number(self, value):
+        from . import mpesa
+        try:
+            return mpesa.format_phone(value)
+        except mpesa.MpesaError as exc:
+            raise serializers.ValidationError(str(exc))
+
+
+class DepositSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Deposit
+        fields = (
+            "id", "amount", "status", "method", "reference",
+            "checkout_request_id", "mpesa_receipt", "result_desc", "created_at",
+        )
+        read_only_fields = fields
+
+
+# ============================================================
+# Withdrawals
+# ============================================================
+class WithdrawalInitiateSerializer(serializers.Serializer):
+    amount = serializers.CharField()
+
+    def validate_amount(self, value):
+        try:
+            amount = Decimal(value)
+        except (InvalidOperation, TypeError):
+            raise serializers.ValidationError("Invalid amount.")
+        if amount < MIN_WITHDRAWAL_AMOUNT:
+            raise serializers.ValidationError(f"Minimum withdrawal is KES {MIN_WITHDRAWAL_AMOUNT}.")
+        return amount
+
+
+class WithdrawalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Withdrawal
+        fields = ("id", "amount", "status", "method", "reference", "created_at")
         read_only_fields = fields
 
 
