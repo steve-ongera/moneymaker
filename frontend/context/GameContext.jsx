@@ -1,5 +1,4 @@
 //context/GameContext.jsx
-//context/GameContext.jsx
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import * as api from "../services/api.js";
 import { AuthContext } from "./AuthContext.jsx";
@@ -46,8 +45,6 @@ export function GameProvider({ children }) {
       switch (msg.type) {
         case "state.sync": {
           setRound(msg.round);
-          // msg.active_bet comes from BetSerializer, keyed "id" — add "bet_id" so
-          // cashOutBet() (and any other code reading activeBet.bet_id) still works.
           setActiveBet(msg.active_bet ? { ...msg.active_bet, bet_id: msg.active_bet.id } : null);
           if (msg.wallet_balance) wallet?.setBalanceFromServer(msg.wallet_balance);
           if (msg.round?.status === "RUNNING") {
@@ -87,6 +84,13 @@ export function GameProvider({ children }) {
           setMultiplier(parseFloat(msg.crash_multiplier));
           setLastCrash(parseFloat(msg.crash_multiplier));
           setActiveBet((prev) => (prev && prev.status === "ACTIVE" ? { ...prev, status: "LOST" } : prev));
+          // Push the crash straight into the history chips instantly, instead of
+          // waiting for the next REST refetch of /aviator/history/.
+          setRecentRounds((prev) => {
+            const alreadyThere = prev.some((r) => r.round_id === msg.round_id);
+            if (alreadyThere) return prev;
+            return [{ round_id: msg.round_id, crash_multiplier: msg.crash_multiplier }, ...prev].slice(0, 50);
+          });
           pushNotification({ kind: "crash", text: `Crashed at ${msg.crash_multiplier}x` });
           break;
         }
@@ -156,8 +160,6 @@ export function GameProvider({ children }) {
       const data = await api.getCurrentRound();
       syncFromServerTime(data.server_time);
       setRound(data.round);
-      // data.active_bet comes from BetSerializer, keyed "id" — add "bet_id" so
-      // cashOutBet() (and any other code reading activeBet.bet_id) still works.
       setActiveBet(data.active_bet ? { ...data.active_bet, bet_id: data.active_bet.id } : null);
       if (data.wallet_balance) wallet?.setBalanceFromServer(data.wallet_balance);
       if (data.round?.status === "RUNNING") {
