@@ -2160,3 +2160,110 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
     scroll-behavior: auto !important;
   }
 }
+
+
+/* ── Round Participants (mock live-bets feed) ────────────────────── */
+
+.round-participants {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--panel-bg, #14151f);
+  border: 1px solid var(--panel-border, #262838);
+}
+
+.round-participants-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.round-participants-title {
+  font-weight: 600;
+  color: var(--text-primary, #e6e6f0);
+}
+
+.round-participants-count {
+  color: var(--text-muted, #8b8da3);
+  font-size: 12px;
+}
+
+.round-participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 430px;
+  overflow-y: auto;
+}
+
+.round-participants-empty {
+  padding: 16px 0;
+  text-align: center;
+  color: var(--text-muted, #8b8da3);
+  font-size: 13px;
+}
+
+.round-participant {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--row-bg, rgba(255, 255, 255, 0.02));
+  animation: round-participant-in 0.25s ease-out;
+}
+
+@keyframes round-participant-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.round-participant-phone {
+  color: var(--text-secondary, #b7b9cc);
+  font-variant-numeric: tabular-nums;
+}
+
+.round-participant-stake {
+  color: var(--text-primary, #e6e6f0);
+  font-weight: 500;
+  text-align: right;
+  min-width: 48px;
+}
+
+.round-participant-cashout {
+  min-width: 100px;
+  text-align: right;
+}
+
+.round-participant-win {
+  color: var(--color-success, #3ddc84);
+  font-weight: 600;
+}
+
+.round-participant-loss {
+  color: var(--color-error, #ff5c5c);
+  font-weight: 500;
+}
+
+.round-participant-pending {
+  color: var(--text-muted, #8b8da3);
+}
+
+.round-participant-cashed_out {
+  background: rgba(61, 220, 132, 0.06);
+}
+
+.round-participant-lost {
+  background: rgba(255, 92, 92, 0.05);
+  opacity: 0.75;
+}

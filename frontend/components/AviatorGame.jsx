@@ -8,6 +8,7 @@ import BettingPanel from "./BettingPanel.jsx";
 import LiveBets from "./LiveBets.jsx";
 import GameHistory from "./GameHistory.jsx";
 import Notification from "./Notification.jsx";
+import RoundParticipants from "./RoundParticipants.jsx";
 
 const STATUS_LABEL = {
   WAITING: "Get ready...",
@@ -69,6 +70,9 @@ export default function AviatorGame() {
       {/* grid-area: panel — bet slate stays visible/sticky on desktop */}
       <div className="betting-panel-wrap">
         <BettingPanel />
+
+        {/* Mock, no backend yet — see RoundParticipants.jsx for swap notes */}
+        <RoundParticipants />
       </div>
 
       {/* grid-area: bets */}
