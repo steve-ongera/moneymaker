@@ -17,6 +17,16 @@ urlpatterns = [
     path("wallet/", views.WalletView.as_view(), name="wallet"),
     path("wallet/transactions/", views.WalletTransactionsView.as_view(), name="wallet-transactions"),
 
+    # Deposits (M-Pesa STK Push)
+    path("deposit/initiate/", views.DepositInitiateView.as_view(), name="deposit-initiate"),
+    path("deposit/status/<str:checkout_request_id>/", views.DepositStatusView.as_view(), name="deposit-status"),
+    
+    # M-Pesa Callbacks (Public URL - no authentication)
+    path("mpesa/callback/", views.MpesaCallbackView.as_view(), name="mpesa-callback"),
+    
+    # Withdrawals
+    path("withdrawal/initiate/", views.WithdrawalInitiateView.as_view(), name="withdrawal-initiate"),
+
     # Aviator
     path("aviator/current-round/", views.CurrentRoundView.as_view(), name="aviator-current-round"),
     path("aviator/history/", views.RoundHistoryView.as_view(), name="aviator-history"),

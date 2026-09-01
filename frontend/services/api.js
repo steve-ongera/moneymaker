@@ -130,6 +130,66 @@ export async function getTransactions(page = 1) {
 }
 
 // ============================================================
+// Deposits (M-Pesa STK Push)
+// ============================================================
+export async function initiateDeposit({ phoneNumber, amount }) {
+  const { data } = await client.post("/deposit/initiate/", {
+    phone_number: phoneNumber,
+    amount: amount.toString(),
+  });
+  return data;
+}
+
+export async function checkDepositStatus(checkoutRequestId) {
+  const { data } = await client.get(`/deposit/status/${checkoutRequestId}/`);
+  return data;
+}
+
+export async function pollDepositStatus(checkoutRequestId, onSuccess, onError, onTimeout) {
+  let attempts = 0;
+  const maxAttempts = 30; // 30 * 5 seconds = 2.5 minutes
+  const interval = 5000; // 5 seconds
+
+  const poll = setInterval(async () => {
+    attempts++;
+    try {
+      const response = await checkDepositStatus(checkoutRequestId);
+      
+      if (response.status === "COMPLETED") {
+        clearInterval(poll);
+        if (onSuccess) onSuccess(response);
+        return;
+      } else if (response.status === "FAILED") {
+        clearInterval(poll);
+        if (onError) onError(response.data?.result_desc || "Payment failed");
+        return;
+      }
+      
+      // If max attempts reached, timeout
+      if (attempts >= maxAttempts) {
+        clearInterval(poll);
+        if (onTimeout) onTimeout("Payment timeout. Please check your M-Pesa statement.");
+      }
+    } catch (error) {
+      console.error("Polling error:", error);
+      // Don't stop polling on network errors
+    }
+  }, interval);
+
+  return poll;
+}
+
+// ============================================================
+// Withdrawals
+// ============================================================
+export async function initiateWithdrawal({ amount }) {
+  const { data } = await client.post("/withdrawal/initiate/", {
+    amount: amount.toString(),
+  });
+  return data;
+}
+
+// ============================================================
 // Aviator
 // ============================================================
 export async function getCurrentRound() {

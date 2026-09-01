@@ -6,12 +6,22 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
+import logging
+import uuid
+from decimal import Decimal
+from django.conf import settings
 
-from . import fairness
-from .models import AuditLog, Bet, GameRound, User, WalletTransaction
+import logging
+
+logger = logging.getLogger(__name__)
+
+from . import fairness, mpesa
+from .models import AuditLog, Bet, Deposit, GameRound, User, WalletTransaction, Withdrawal
 from .serializers import (
     BetSerializer,
     CashoutSerializer,
+    DepositInitiateSerializer,
+    DepositSerializer,
     FairnessVerifySerializer,
     GameRoundSerializer,
     PlaceBetSerializer,
@@ -19,8 +29,12 @@ from .serializers import (
     UserSerializer,
     WalletSerializer,
     WalletTransactionSerializer,
+    WithdrawalInitiateSerializer,
+    WithdrawalSerializer,
 )
 from .wallet import DuplicateRequest, InsufficientBalance, InvalidBetState, WalletService
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 channel_layer = get_channel_layer()
 
@@ -75,6 +89,438 @@ class WalletTransactionsView(generics.ListAPIView):
 
     def get_queryset(self):
         return WalletTransaction.objects.filter(user=self.request.user)
+
+
+# ============================================================
+# Deposits (M-Pesa STK Push)
+# ============================================================
+class DepositInitiateView(APIView):
+    """
+    Initiate M-Pesa STK Push deposit.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = DepositInitiateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        amount = serializer.validated_data["amount"]
+        phone_number = serializer.validated_data["phone_number"]
+
+        # Generate unique reference
+        reference = f"DEP{timezone.now().strftime('%Y%m%d%H%M%S')}{request.user.id}"
+
+        try:
+            # Create deposit record
+            deposit = Deposit.objects.create(
+                user=request.user,
+                amount=amount,
+                method="MPESA",
+                status=Deposit.Status.PENDING,
+                reference=reference,
+                phone_number=phone_number,
+            )
+
+            # Initiate STK push
+            response = mpesa.stk_push(
+                phone_number=phone_number,
+                amount=int(amount),
+                account_reference=reference[:12],
+                transaction_desc=f"Aviator Deposit {reference[:8]}",
+            )
+
+            # Update deposit with M-Pesa response
+            deposit.checkout_request_id = response.get("CheckoutRequestID")
+            deposit.merchant_request_id = response.get("MerchantRequestID")
+            deposit.save()
+
+            _log(request.user, "deposit.initiated", {
+                "deposit_id": str(deposit.id),
+                "amount": str(amount),
+                "phone": phone_number,
+                "checkout_request_id": deposit.checkout_request_id,
+            }, request)
+
+            # If in DEBUG mode with mock, auto-complete the deposit after a delay
+            # This simulates the callback flow for testing
+            if settings.DEBUG and deposit.checkout_request_id and deposit.checkout_request_id.startswith("MOCK"):
+                # Auto-complete the deposit in 2 seconds (simulating callback)
+                import threading
+                def auto_complete():
+                    import time
+                    time.sleep(2)
+                    try:
+                        # Simulate callback
+                        callback_data = mpesa.simulate_mock_callback(deposit.checkout_request_id, success=True)
+                        # Process the callback
+                        _process_mock_callback(deposit, callback_data)
+                    except Exception as e:
+                        logger.error(f"Auto-complete mock deposit error: {str(e)}")
+                
+                threading.Thread(target=auto_complete, daemon=True).start()
+                
+                return Response({
+                    "success": True,
+                    "message": "MOCK: STK Push sent successfully. Auto-completing in 2 seconds.",
+                    "data": {
+                        "deposit_id": str(deposit.id),
+                        "checkout_request_id": deposit.checkout_request_id,
+                        "merchant_request_id": deposit.merchant_request_id,
+                        "status": deposit.status,
+                        "is_mock": True,
+                    }
+                }, status=status.HTTP_200_OK)
+
+            return Response({
+                "success": True,
+                "message": "STK Push sent successfully. Please check your phone.",
+                "data": {
+                    "deposit_id": str(deposit.id),
+                    "checkout_request_id": deposit.checkout_request_id,
+                    "merchant_request_id": deposit.merchant_request_id,
+                    "status": deposit.status,
+                }
+            }, status=status.HTTP_200_OK)
+
+        except mpesa.MpesaError as e:
+            deposit.status = Deposit.Status.FAILED
+            deposit.result_desc = str(e)
+            deposit.save()
+            _log(request.user, "deposit.failed", {
+                "deposit_id": str(deposit.id),
+                "error": str(e),
+            }, request)
+            return Response({
+                "success": False,
+                "error": str(e),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Deposit initiation error: {str(e)}")
+            return Response({
+                "success": False,
+                "error": "Failed to initiate deposit. Please try again.",
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _process_mock_callback(deposit, callback_data):
+    """Process a mock callback for DEBUG mode."""
+    try:
+        body = callback_data.get("Body", {})
+        stk_callback = body.get("stkCallback", {})
+        
+        result_code = stk_callback.get("ResultCode")
+        result_desc = stk_callback.get("ResultDesc")
+        
+        if result_code == "0":
+            # Payment successful
+            callback_metadata = stk_callback.get("CallbackMetadata", {})
+            items = callback_metadata.get("Item", [])
+            metadata_dict = {item["Name"]: item["Value"] for item in items}
+            mpesa_receipt = metadata_dict.get("MpesaReceiptNumber", f"MOCK{str(uuid.uuid4().hex[:10]).upper()}")
+            
+            deposit.status = Deposit.Status.COMPLETED
+            deposit.mpesa_receipt = mpesa_receipt
+            deposit.result_desc = result_desc
+            deposit.save()
+            
+            # Credit the user's wallet
+            WalletService.deposit(
+                user=deposit.user,
+                amount=deposit.amount,
+                reference=f"MPESA:{mpesa_receipt}"
+            )
+            
+            logger.info(f"Mock deposit completed: {deposit.checkout_request_id} - Receipt: {mpesa_receipt}")
+        else:
+            deposit.status = Deposit.Status.FAILED
+            deposit.result_desc = result_desc
+            deposit.save()
+            logger.warning(f"Mock deposit failed: {deposit.checkout_request_id} - {result_desc}")
+    except Exception as e:
+        logger.error(f"Mock callback processing error: {str(e)}")
+
+
+class DepositStatusView(APIView):
+    """
+    Check the status of a deposit by checkout_request_id.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, checkout_request_id):
+        try:
+            # Get the deposit from database
+            deposit = Deposit.objects.get(
+                checkout_request_id=checkout_request_id,
+                user=request.user
+            )
+
+            # If deposit is already completed or failed, return cached status
+            if deposit.status != Deposit.Status.PENDING:
+                serializer = DepositSerializer(deposit)
+                return Response({
+                    "success": True,
+                    "status": deposit.status,
+                    "data": serializer.data,
+                })
+
+            # For mock transactions, check if we should auto-complete
+            if settings.DEBUG and deposit.checkout_request_id.startswith("MOCK"):
+                # Check if it's been more than 5 seconds, auto-complete if still pending
+                import time
+                from datetime import timedelta
+                time_since_created = timezone.now() - deposit.created_at
+                if time_since_created > timedelta(seconds=5):
+                    # Auto-complete as success
+                    deposit.status = Deposit.Status.COMPLETED
+                    deposit.mpesa_receipt = f"MOCK{str(uuid.uuid4().hex[:10]).upper()}"
+                    deposit.result_desc = "Mock payment successful"
+                    deposit.save()
+                    
+                    WalletService.deposit(
+                        user=request.user,
+                        amount=deposit.amount,
+                        reference=f"MPESA:{deposit.mpesa_receipt}"
+                    )
+                    
+                    _log(request.user, "deposit.completed", {
+                        "deposit_id": str(deposit.id),
+                        "amount": str(deposit.amount),
+                        "mpesa_receipt": deposit.mpesa_receipt,
+                    }, request)
+                    
+                    wallet = WalletService.get_or_create_wallet(request.user)
+                    _notify_user(request.user.id, {
+                        "type": "wallet.updated",
+                        "balance": str(wallet.balance),
+                        "amount": str(deposit.amount),
+                        "tx_type": "DEPOSIT",
+                    })
+
+            # Query M-Pesa for latest status (real transactions)
+            try:
+                response = mpesa.query_status(checkout_request_id)
+                result_code = response.get("ResultCode")
+
+                if result_code == "0":
+                    # Payment successful - credit the user's wallet
+                    deposit.status = Deposit.Status.COMPLETED
+                    deposit.mpesa_receipt = response.get("ResultDesc", "")
+                    deposit.save()
+
+                    WalletService.deposit(
+                        user=request.user,
+                        amount=deposit.amount,
+                        reference=f"MPESA:{deposit.mpesa_receipt}"
+                    )
+
+                    _log(request.user, "deposit.completed", {
+                        "deposit_id": str(deposit.id),
+                        "amount": str(deposit.amount),
+                        "mpesa_receipt": deposit.mpesa_receipt,
+                    }, request)
+
+                    wallet = WalletService.get_or_create_wallet(request.user)
+                    _notify_user(request.user.id, {
+                        "type": "wallet.updated",
+                        "balance": str(wallet.balance),
+                        "amount": str(deposit.amount),
+                        "tx_type": "DEPOSIT",
+                    })
+
+                    logger.info(f"Deposit completed: {checkout_request_id} for user {request.user.username}")
+
+                elif result_code != "1037":  # 1037 = pending
+                    deposit.status = Deposit.Status.FAILED
+                    deposit.result_desc = response.get("ResultDesc", "Payment failed")
+                    deposit.save()
+                    logger.warning(f"Deposit failed: {checkout_request_id} - {deposit.result_desc}")
+
+            except mpesa.MpesaError as e:
+                # If query fails, return current status
+                logger.warning(f"Failed to query deposit status: {str(e)}")
+
+            serializer = DepositSerializer(deposit)
+            return Response({
+                "success": True,
+                "status": deposit.status,
+                "data": serializer.data,
+            })
+
+        except Deposit.DoesNotExist:
+            return Response({
+                "success": False,
+                "error": "Deposit not found.",
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(f"Deposit status check error: {str(e)}")
+            return Response({
+                "success": False,
+                "error": "Failed to check deposit status.",
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MpesaCallbackView(APIView):
+    """
+    M-Pesa STK Push callback URL.
+    This endpoint receives the payment result from Safaricom.
+    """
+    permission_classes = [AllowAny]  # Public endpoint
+
+    def post(self, request):
+        try:
+            data = request.data
+            logger.info(f"M-Pesa callback received: {data}")
+
+            body = data.get("Body", {})
+            stk_callback = body.get("stkCallback", {})
+
+            checkout_request_id = stk_callback.get("CheckoutRequestID")
+            result_code = stk_callback.get("ResultCode")
+            result_desc = stk_callback.get("ResultDesc")
+
+            if not checkout_request_id:
+                logger.error("No CheckoutRequestID in callback")
+                return Response({"error": "Missing CheckoutRequestID"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Find the deposit
+            try:
+                deposit = Deposit.objects.get(checkout_request_id=checkout_request_id)
+            except Deposit.DoesNotExist:
+                logger.error(f"Deposit not found for CheckoutRequestID: {checkout_request_id}")
+                return Response({"error": "Deposit not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Process the result
+            if result_code == "0":
+                # Payment successful
+                callback_metadata = stk_callback.get("CallbackMetadata", {})
+                items = callback_metadata.get("Item", [])
+
+                # Extract metadata
+                metadata_dict = {item["Name"]: item["Value"] for item in items}
+                mpesa_receipt = metadata_dict.get("MpesaReceiptNumber")
+                amount = metadata_dict.get("Amount")
+
+                # Update deposit
+                deposit.status = Deposit.Status.COMPLETED
+                deposit.mpesa_receipt = mpesa_receipt
+                deposit.result_desc = result_desc
+                deposit.save()
+
+                # Credit the user's wallet
+                try:
+                    WalletService.deposit(
+                        user=deposit.user,
+                        amount=deposit.amount,
+                        reference=f"MPESA:{mpesa_receipt}"
+                    )
+                    
+                    # Notify user via WebSocket
+                    wallet = WalletService.get_or_create_wallet(deposit.user)
+                    _notify_user(deposit.user.id, {
+                        "type": "wallet.updated",
+                        "balance": str(wallet.balance),
+                        "amount": str(deposit.amount),
+                        "tx_type": "DEPOSIT",
+                    })
+                    
+                    _log(deposit.user, "deposit.completed", {
+                        "deposit_id": str(deposit.id),
+                        "amount": str(deposit.amount),
+                        "mpesa_receipt": mpesa_receipt,
+                    }, request)
+                    
+                    logger.info(f"Deposit completed via callback: {checkout_request_id} - Receipt: {mpesa_receipt}")
+                except Exception as e:
+                    logger.error(f"Failed to credit wallet for deposit {checkout_request_id}: {str(e)}")
+                    # Don't fail the callback, log and continue
+
+            else:
+                # Payment failed
+                deposit.status = Deposit.Status.FAILED
+                deposit.result_desc = result_desc
+                deposit.save()
+                logger.warning(f"Deposit failed via callback: {checkout_request_id} - {result_desc}")
+
+            return Response({"ResultCode": 0, "ResultDesc": "Success"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Callback processing error: {str(e)}")
+            return Response({"error": "Failed to process callback"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================
+# Withdrawals
+# ============================================================
+class WithdrawalInitiateView(APIView):
+    """
+    Initiate a withdrawal request.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = WithdrawalInitiateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        amount = serializer.validated_data["amount"]
+        reference = f"WTH{timezone.now().strftime('%Y%m%d%H%M%S')}{request.user.id}"
+
+        try:
+            # Deduct from wallet
+            wallet = WalletService.withdraw(
+                user=request.user,
+                amount=amount,
+                reference=reference
+            )
+
+            # Create withdrawal record
+            withdrawal = Withdrawal.objects.create(
+                user=request.user,
+                amount=amount,
+                method="MPESA",
+                status=Withdrawal.Status.PENDING,
+                reference=reference,
+            )
+
+            _log(request.user, "withdrawal.initiated", {
+                "withdrawal_id": str(withdrawal.id),
+                "amount": str(amount),
+            }, request)
+
+            # Notify user
+            _notify_user(request.user.id, {
+                "type": "wallet.updated",
+                "balance": str(wallet.balance),
+                "amount": str(amount),
+                "tx_type": "WITHDRAWAL",
+            })
+
+            return Response({
+                "success": True,
+                "message": "Withdrawal request submitted successfully.",
+                "data": {
+                    "withdrawal_id": str(withdrawal.id),
+                    "amount": str(amount),
+                    "status": withdrawal.status,
+                    "reference": withdrawal.reference,
+                }
+            }, status=status.HTTP_200_OK)
+
+        except InsufficientBalance as e:
+            return Response({
+                "success": False,
+                "error": str(e),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Withdrawal initiation error: {str(e)}")
+            return Response({
+                "success": False,
+                "error": "Failed to initiate withdrawal.",
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ============================================================
@@ -181,8 +627,6 @@ class CashoutView(APIView):
     def post(self, request):
         serializer = CashoutSerializer(data=request.data)
         if not serializer.is_valid():
-            # Normalize DRF's {field: [msg, ...]} shape into your app's
-            # consistent {"error": {"message": "..."}} shape.
             first_field, first_errors = next(iter(serializer.errors.items()))
             message = f"{first_field}: {first_errors[0]}"
             return Response({"error": {"message": message}}, status=status.HTTP_400_BAD_REQUEST)
@@ -232,6 +676,7 @@ class CashoutView(APIView):
         _log(request.user, "bet.cashout", {"bet_id": str(bet.id), "payout": str(bet.payout)}, request)
 
         return Response(BetSerializer(bet).data, status=status.HTTP_200_OK)
+
 
 class MyBetsView(generics.ListAPIView):
     serializer_class = BetSerializer

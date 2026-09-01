@@ -1,6 +1,6 @@
 """
 M-Pesa Daraja API client (STK Push / Lipa Na M-Pesa Online).
-
+api/mpesa.py
 Only handles the customer-initiated deposit flow (STK push). B2C payouts
 (for withdrawals) use a different, more involved credential setup
 (initiator name + security credential) and are intentionally not wired up
@@ -20,6 +20,7 @@ Required settings (pull from env — see .env.example):
 
 import base64
 import logging
+import uuid
 from datetime import datetime
 
 import requests
@@ -70,13 +71,42 @@ def get_access_token() -> str:
     return resp.json()["access_token"]
 
 
+def _generate_mock_response(phone_number: str, amount: int, account_reference: str) -> dict:
+    """
+    Generate a mock STK push response for DEBUG mode.
+    This bypasses the actual M-Pesa API call.
+    """
+    checkout_request_id = f"MOCK{uuid.uuid4().hex[:16].upper()}"
+    merchant_request_id = f"MOCK{uuid.uuid4().hex[:16].upper()}"
+    
+    logger.info(f"MOCK STK Push: Phone={phone_number}, Amount={amount}, Ref={account_reference}")
+    logger.info(f"MOCK CheckoutRequestID: {checkout_request_id}")
+    
+    return {
+        "MerchantRequestID": merchant_request_id,
+        "CheckoutRequestID": checkout_request_id,
+        "ResponseCode": "0",
+        "ResponseDescription": "Success. Request accepted for processing",
+        "CustomerMessage": "Success. Request accepted for processing",
+        "ResultCode": "0",
+        "ResultDesc": "Success",
+    }
+
+
 def stk_push(*, phone_number: str, amount: int, account_reference: str, transaction_desc: str = "Aviator Deposit"):
     """
     Initiates an STK push (prompts the user's phone for their M-Pesa PIN).
     Returns Safaricom's response dict, which includes CheckoutRequestID and
     MerchantRequestID — store these on the Deposit row so the callback can
     match the result back to it.
+    
+    If DEBUG=True, this bypasses the actual M-Pesa API and returns a mock response.
     """
+    # Bypass M-Pesa in DEBUG mode
+    if settings.DEBUG:
+        logger.info("DEBUG mode: Bypassing M-Pesa STK push")
+        return _generate_mock_response(phone_number, amount, account_reference)
+    
     token = get_access_token()
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     password = base64.b64encode(
@@ -110,3 +140,93 @@ def stk_push(*, phone_number: str, amount: int, account_reference: str, transact
         raise MpesaError(data.get("errorMessage") or data.get("ResponseDescription") or "STK push failed")
 
     return data
+
+
+def query_status(checkout_request_id: str) -> dict:
+    """
+    Query the status of an STK push transaction.
+    
+    If DEBUG=True and the checkout_request_id starts with 'MOCK', returns a mock response.
+    """
+    # Bypass M-Pesa query in DEBUG mode for mock transactions
+    if settings.DEBUG and checkout_request_id.startswith("MOCK"):
+        logger.info(f"DEBUG mode: Mock query for CheckoutRequestID: {checkout_request_id}")
+        return {
+            "ResponseCode": "0",
+            "ResponseDescription": "Success. Request accepted for processing",
+            "MerchantRequestID": f"MOCK{uuid.uuid4().hex[:16].upper()}",
+            "CheckoutRequestID": checkout_request_id,
+            "ResultCode": "0",
+            "ResultDesc": "The service request is processed successfully.",
+        }
+    
+    token = get_access_token()
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    password = base64.b64encode(
+        f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}".encode()
+    ).decode()
+
+    payload = {
+        "BusinessShortCode": settings.MPESA_SHORTCODE,
+        "Password": password,
+        "Timestamp": timestamp,
+        "CheckoutRequestID": checkout_request_id,
+    }
+
+    resp = requests.post(
+        f"{_base_url()}/mpesa/stkpushquery/v1/query",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=15,
+    )
+    data = resp.json()
+
+    if resp.status_code != 200:
+        logger.error("mpesa query status failed: %s %s", resp.status_code, data)
+        raise MpesaError(data.get("errorMessage") or "Query failed")
+
+    return data
+
+
+def simulate_mock_callback(checkout_request_id: str, success: bool = True) -> dict:
+    """
+    Simulate an M-Pesa callback for mock transactions in DEBUG mode.
+    This is useful for testing the callback flow without actually receiving
+    a callback from Safaricom.
+    """
+    if not settings.DEBUG:
+        raise MpesaError("Mock callback simulation is only available in DEBUG mode")
+    
+    if not checkout_request_id.startswith("MOCK"):
+        raise MpesaError("Invalid mock checkout_request_id")
+    
+    if success:
+        return {
+            "Body": {
+                "stkCallback": {
+                    "MerchantRequestID": f"MOCK{uuid.uuid4().hex[:16].upper()}",
+                    "CheckoutRequestID": checkout_request_id,
+                    "ResultCode": "0",
+                    "ResultDesc": "The service request is processed successfully.",
+                    "CallbackMetadata": {
+                        "Item": [
+                            {"Name": "Amount", "Value": "500.00"},
+                            {"Name": "MpesaReceiptNumber", "Value": f"MOCK{str(uuid.uuid4().hex[:10]).upper()}"},
+                            {"Name": "TransactionDate", "Value": datetime.now().strftime("%Y%m%d%H%M%S")},
+                            {"Name": "PhoneNumber", "Value": "254700000000"},
+                        ]
+                    }
+                }
+            }
+        }
+    else:
+        return {
+            "Body": {
+                "stkCallback": {
+                    "MerchantRequestID": f"MOCK{uuid.uuid4().hex[:16].upper()}",
+                    "CheckoutRequestID": checkout_request_id,
+                    "ResultCode": "1032",
+                    "ResultDesc": "Request cancelled by user",
+                }
+            }
+        }

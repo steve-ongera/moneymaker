@@ -1,4 +1,3 @@
-
 """
 Django settings for MoneyMaker Aviator.
 """
@@ -77,9 +76,13 @@ ASGI_APPLICATION = "backend.asgi.application"
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME", "moneymaker"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
 
@@ -184,6 +187,16 @@ AVIATOR_MIN_BET = os.environ.get("AVIATOR_MIN_BET", "10.00")
 AVIATOR_MAX_BET = os.environ.get("AVIATOR_MAX_BET", "50000.00")
  
 # ------------------------------------------------------------------
+# M-Pesa Daraja API Configuration
+# ------------------------------------------------------------------
+MPESA_ENV = os.environ.get("MPESA_ENV", "sandbox")  # "sandbox" or "production"
+MPESA_CONSUMER_KEY = os.environ.get("MPESA_CONSUMER_KEY", "")
+MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "")
+MPESA_SHORTCODE = os.environ.get("MPESA_SHORTCODE", "174379")  # Sandbox default
+MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "")
+MPESA_CALLBACK_URL = os.environ.get("MPESA_CALLBACK_URL", "https://your-domain.com/api/mpesa/callback/")
+ 
+# ------------------------------------------------------------------
 # Logging
 # ------------------------------------------------------------------
 LOGGING = {
@@ -194,6 +207,7 @@ LOGGING = {
     "loggers": {
         "aviator.engine": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "aviator.wallet": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "aviator.mpesa": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "aviator.views": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
- 
