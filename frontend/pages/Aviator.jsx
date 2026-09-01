@@ -1,3 +1,4 @@
+//pages/Aviator.jsx
 import AviatorGame from "../components/AviatorGame.jsx";
 
 export default function Aviator() {

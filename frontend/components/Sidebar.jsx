@@ -1,3 +1,4 @@
+//components/Siderbar.jsx
 import { NavLink } from "react-router-dom";
 
 const LINKS = [

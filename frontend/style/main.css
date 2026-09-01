@@ -1,250 +1,1574 @@
+/* ==========================================================================
+   AVIATOR — MAIN STYLESHEET
+   ==========================================================================
+   Structure:
+     1.  Tokens (color / type / space / motion / radius / shadow / z-index)
+     2.  Reset & base elements
+     3.  Typography scale & utilities
+     4.  Layout shell (app-shell, app-content, containers, grid/flex utils)
+     5.  Navbar
+     6.  Sidebar
+     7.  Buttons
+     8.  Forms & Auth pages (Login / Register)
+     9.  Alerts & Toast notifications
+     10. Aviator game — stage, sky, plane, multiplier, countdown
+     11. Crash animation
+     12. Game history chips
+     13. Betting panel (BettingPanel / CashoutButton)
+     14. Live bets / Bet cards
+     15. Betting history page & grid
+     16. Dashboard cards
+     17. Wallet page
+     18. Transactions
+     19. Profile page
+     20. Loading / empty / 404 states
+     21. Scrollbars, selection, focus rings
+     22. Responsive breakpoints summary
+     23. Reduced motion / accessibility
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. TOKENS
+   ========================================================================== */
+
 :root {
-  --bg: #0b0e14;
-  --bg-panel: #131722;
-  --bg-panel-alt: #1a1f2e;
-  --border: #262c3d;
-  --text: #e8eaf0;
-  --text-dim: #8890a4;
-  --accent: #ff5c8a;
-  --accent-2: #6f5cff;
-  --green: #21c17c;
-  --red: #ef4a5f;
+  /* ---- Brand gradient (logo, primary CTAs, active states) -------------- */
+  --brand-1: #ff7a2e;
+  --brand-2: #ea5d0b;
+  --brand-3: #b3450b;
+  --brand-4: #8b3403;
+  --brand-gradient: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 45%, var(--brand-4) 100%);
+  --brand-gradient-flat: linear-gradient(90deg, var(--brand-2) 0%, var(--brand-4) 100%);
+  --brand-glow: rgba(234, 93, 11, 0.45);
+
+  /* ---- Neutral / shell -------------------------------------------------- */
+  --bg-app: #101018;
+  --bg-deep: #15161f;
+  --bg-panel: #1c1d29;
+  --bg-panel-alt: #232434;
+  --bg-elevated: #2a2b3c;
+  --bg-input: #23242f;
+  --bg-hover: #2c2d3e;
+  --border-subtle: #2c2e3f;
+  --border: #383a4f;
+  --border-strong: #4a4c62;
+  --divider: #262838;
+
+  /* ---- Text --------------------------------------------------------------*/
+  --text-primary: #f4f5f9;
+  --text-secondary: #b7b9cc;
+  --text-dim: #8a8ca3;
+  --text-faint: #5f6178;
+  --text-on-brand: #ffffff;
+  --text-on-light: #14151f;
+
+  /* ---- Semantic ----------------------------------------------------------*/
+  --green: #22c55e;
+  --green-deep: #17a367;
+  --green-tint: rgba(34, 197, 94, 0.14);
+  --red: #ef4444;
+  --red-deep: #c22f3a;
+  --red-tint: rgba(239, 68, 68, 0.14);
   --gold: #ffb547;
-  --radius: 10px;
-  --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --gold-tint: rgba(255, 181, 71, 0.14);
+  --blue-chip: #4f8ef7;
+  --blue-chip-tint: rgba(79, 142, 247, 0.16);
+  --purple-chip: #9b6bff;
+  --purple-chip-tint: rgba(155, 107, 255, 0.16);
+  --pink-chip: #ff4fa3;
+  --pink-chip-tint: rgba(255, 79, 163, 0.16);
+
+  /* ---- Game stage / sky --------------------------------------------------*/
+  --sky-top: #bfe0ff;
+  --sky-mid: #8ec3f2;
+  --sky-low: #6fa8dc;
+  --sky-horizon: #d7ecff;
+  --cloud: rgba(255, 255, 255, 0.55);
+  --stage-grid-line: rgba(255, 255, 255, 0.14);
+
+  /* ---- Typography ---------------------------------------------------------*/
+  --font-display: "Sora", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --font-body: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --font-mono: "Roboto Mono", "SFMono-Regular", Consolas, monospace;
+
+  --fs-2xs: 0.6875rem;   /* 11px */
+  --fs-xs: 0.75rem;      /* 12px */
+  --fs-sm: 0.8125rem;    /* 13px */
+  --fs-base: 0.9375rem;  /* 15px */
+  --fs-md: 1rem;         /* 16px */
+  --fs-lg: 1.125rem;     /* 18px */
+  --fs-xl: 1.375rem;     /* 22px */
+  --fs-2xl: 1.75rem;     /* 28px */
+  --fs-3xl: 2.25rem;     /* 36px */
+  --fs-multiplier: 3rem; /* scales up via clamp in component rule */
+
+  --lh-tight: 1.15;
+  --lh-snug: 1.35;
+  --lh-normal: 1.55;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 800;
+
+  /* ---- Spacing scale (4px base) -------------------------------------------*/
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-8: 2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
+  --sp-16: 4rem;
+
+  /* ---- Radius ---------------------------------------------------------------*/
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ---- Shadow -----------------------------------------------------------------*/
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-brand: 0 8px 24px var(--brand-glow);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* ---- Motion -------------------------------------------------------------------*/
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 400ms;
+
+  /* ---- Layout ------------------------------------------------------------------*/
+  --content-max: 1180px;
+  --sidebar-w: 236px;
+  --navbar-h: 60px;
+  --stage-h-mobile: 240px;
+  --stage-h-tablet: 320px;
+  --stage-h-desktop: 420px;
+
+  /* ---- Z-index scale -------------------------------------------------------------*/
+  --z-sticky: 20;
+  --z-sidebar: 25;
+  --z-overlay: 40;
+  --z-toast: 60;
+  --z-modal: 80;
 }
 
-* { box-sizing: border-box; }
+/* Breakpoint reference (used throughout via min-width, mobile-first):
+   --bp-sm: 480px   phones (large)
+   --bp-md: 768px   tablets / small laptop split
+   --bp-lg: 1024px  laptop
+   --bp-xl: 1280px  desktop                                                */
+
+
+/* ==========================================================================
+   2. RESET & BASE
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: "Segoe UI", Roboto, -apple-system, sans-serif;
+  min-height: 100vh;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
 }
 
-a { color: inherit; text-decoration: none; }
-code { background: var(--bg-panel-alt); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+img, picture, svg { display: block; max-width: 100%; }
 
-.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
-.app-content { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+a {
+  color: inherit;
+  text-decoration: none;
+}
 
-/* ---------------- Navbar ---------------- */
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+ul, ol { list-style: none; margin: 0; padding: 0; }
+
+table { border-collapse: collapse; width: 100%; }
+
+code, kbd {
+  font-family: var(--font-mono);
+  background: var(--bg-panel-alt);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85em;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: var(--sp-4) 0;
+}
+
+
+/* ==========================================================================
+   3. TYPOGRAPHY
+   ========================================================================== */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--sp-2);
+  color: var(--text-primary);
+}
+
+h1 { font-size: var(--fs-2xl); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+h4 { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+
+p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
+
+.text-dim { color: var(--text-dim); }
+.text-faint { color: var(--text-faint); }
+.text-brand { color: var(--brand-2); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-gold { color: var(--gold); }
+
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+.eyebrow {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  font-weight: var(--fw-semibold);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  h1 { font-size: var(--fs-3xl); }
+  h2 { font-size: var(--fs-2xl); }
+}
+
+
+/* ==========================================================================
+   4. LAYOUT SHELL
+   ========================================================================== */
+
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-4);
+  padding-bottom: calc(var(--sp-8) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .app-content { padding: var(--sp-6); }
+}
+
+@media (min-width: 1024px) {
+  .app-content { padding: var(--sp-8); }
+}
+
+.container { width: 100%; max-width: var(--content-max); margin: 0 auto; }
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-1 { gap: var(--sp-1); }
+.gap-2 { gap: var(--sp-2); }
+.gap-3 { gap: var(--sp-3); }
+.gap-4 { gap: var(--sp-4); }
+
+.grid { display: grid; gap: var(--sp-4); }
+.grid-auto-220 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-auto-200 { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.hide-mobile { display: none; }
+.show-mobile { display: block; }
+@media (min-width: 768px) {
+  .hide-mobile { display: initial; }
+  .show-mobile { display: none; }
+}
+
+
+/* ==========================================================================
+   5. NAVBAR
+   ========================================================================== */
+
 .navbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
+  gap: var(--sp-3);
+  height: var(--navbar-h);
+  padding: 0 var(--sp-4);
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
-  z-index: 20;
-}
-.navbar-brand { font-weight: 800; letter-spacing: 1px; font-size: 1.1rem; color: var(--accent); }
-.navbar-links { display: flex; gap: 20px; }
-.navbar-links a { color: var(--text-dim); font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
-.navbar-links a:hover { color: var(--text); }
-.navbar-right { display: flex; align-items: center; gap: 12px; }
-.navbar-balance {
-  background: var(--bg-panel-alt);
-  border: 1px solid var(--border);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-weight: 600;
-  color: var(--gold);
-  font-size: 0.9rem;
+  z-index: var(--z-sticky);
+  backdrop-filter: blur(10px);
 }
 
-/* ---------------- Buttons ---------------- */
+.navbar-back {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.navbar-back:hover { color: var(--text-primary); }
+.navbar-back svg { width: 18px; height: 18px; }
+
+.navbar-brand {
+  font-family: var(--font-display);
+  font-weight: var(--fw-black);
+  font-style: italic;
+  font-size: var(--fs-xl);
+  letter-spacing: -0.02em;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.navbar-links {
+  display: none;
+  align-items: center;
+  gap: var(--sp-5);
+}
+@media (min-width: 1024px) {
+  .navbar-links { display: flex; }
+}
+.navbar-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  padding: var(--sp-2) 0;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.navbar-links a:hover,
+.navbar-links a.active { color: var(--text-primary); }
+.navbar-links a.active { border-bottom-color: var(--brand-2); }
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.navbar-balance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-subtle);
+  padding: 6px var(--sp-3);
+  border-radius: var(--radius-pill);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  color: var(--green);
+}
+.navbar-balance .currency { color: var(--text-dim); font-weight: var(--fw-medium); font-size: var(--fs-xs); }
+
+.navbar-deposit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--brand-gradient);
+  color: var(--text-on-brand);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  padding: 8px var(--sp-4);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-brand);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.navbar-deposit:active { transform: scale(0.96); }
+
+.navbar-menu-btn {
+  display: flex;
+  color: var(--text-secondary);
+  padding: var(--sp-2);
+}
+@media (min-width: 1024px) {
+  .navbar-menu-btn { display: none; }
+}
+
+
+/* ==========================================================================
+   6. SIDEBAR
+   ========================================================================== */
+
+.sidebar {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  padding: var(--sp-4) var(--sp-3);
+  background: var(--bg-deep);
+  border-right: 1px solid var(--border-subtle);
+  position: sticky;
+  top: var(--navbar-h);
+  height: calc(100vh - var(--navbar-h));
+  overflow-y: auto;
+}
+@media (min-width: 1024px) {
+  .sidebar { display: flex; }
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-3);
+  border-radius: var(--radius-md);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+.sidebar-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sidebar-link.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: inset 3px 0 0 var(--brand-2);
+}
+
+.sidebar-section-label {
+  font-size: var(--fs-2xs);
+  text-transform: none;
+  color: var(--text-faint);
+  padding: var(--sp-4) var(--sp-3) var(--sp-1);
+  font-weight: var(--fw-semibold);
+}
+
+/* Mobile drawer variant, toggled by a JS class on .sidebar-drawer.open */
+.sidebar-drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(84vw, 300px);
+  transform: translateX(-100%);
+  transition: transform var(--dur-slow) var(--ease-out);
+  z-index: var(--z-sidebar);
+  background: var(--bg-deep);
+  padding: var(--sp-4) var(--sp-3);
+  overflow-y: auto;
+}
+.sidebar-drawer.open { transform: translateX(0); }
+.sidebar-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease-out);
+  z-index: var(--z-overlay);
+}
+.sidebar-drawer-overlay.open { opacity: 1; pointer-events: auto; }
+
+
+/* ==========================================================================
+   7. BUTTONS
+   ========================================================================== */
+
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
   border: none;
-  border-radius: var(--radius);
-  padding: 10px 18px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 12px var(--sp-5);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-base);
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: transform 0.05s ease, opacity 0.2s ease;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
 }
 .btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; }
-.btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
-.btn-block { width: 100%; }
-.btn-small { padding: 6px 12px; font-size: 0.8rem; }
-.btn-icon { padding: 8px 14px; background: var(--bg-panel-alt); color: var(--text); border: 1px solid var(--border); }
-.btn-chip { background: var(--bg-panel-alt); color: var(--text-dim); border: 1px solid var(--border); padding: 6px 12px; }
-.btn-bet { background: linear-gradient(135deg, #21c17c, #17a367); color: #fff; font-size: 1.05rem; padding: 16px; }
-.btn-cashout { background: linear-gradient(135deg, var(--gold), #ff8a3d); color: #201400; font-size: 1.05rem; padding: 16px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn:focus-visible { outline: 2px solid var(--brand-1); outline-offset: 2px; }
 
-/* ---------------- Auth pages ---------------- */
-.auth-page { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
-.auth-card {
-  background: var(--bg-panel);
+.btn-primary {
+  background: var(--brand-gradient);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-brand);
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 32px;
-  width: 360px;
-  box-shadow: var(--shadow);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--border-strong); color: var(--text-primary); }
+
+.btn-icon {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 10px 14px;
+}
+
+.btn-chip {
+  background: var(--bg-panel-alt);
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+.btn-chip:hover:not(:disabled) { color: var(--text-primary); border-color: var(--border-strong); }
+.btn-chip.active {
+  background: var(--brand-gradient);
+  color: var(--text-on-brand);
+  border-color: transparent;
+}
+
+.btn-block { width: 100%; }
+.btn-small { padding: 8px 14px; font-size: var(--fs-sm); }
+.btn-large { padding: 16px var(--sp-6); font-size: var(--fs-lg); }
+
+/* Bet / cash-out — the two hero actions of the whole app */
+.btn-bet {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
+  color: #06210f;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+  padding: var(--sp-4);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
+}
+.btn-bet:hover:not(:disabled) { filter: brightness(1.05); }
+.btn-bet:disabled { box-shadow: none; }
+
+.btn-bet.is-placed {
+  background: linear-gradient(135deg, var(--red) 0%, var(--red-deep) 100%);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+  color: #2a0a0a;
+}
+
+.btn-cashout {
+  background: linear-gradient(135deg, var(--gold) 0%, #ff8a3d 100%);
+  color: #2a1400;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+  padding: var(--sp-4);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 20px rgba(255, 181, 71, 0.35);
+  animation: cashout-pulse 1.6s ease-in-out infinite;
+}
+.btn-cashout:disabled { animation: none; }
+
+@keyframes cashout-pulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(255, 181, 71, 0.35); }
+  50% { box-shadow: 0 8px 28px rgba(255, 181, 71, 0.55); }
+}
+
+
+/* ==========================================================================
+   8. FORMS & AUTH PAGES
+   ========================================================================== */
+
+.field { display: flex; flex-direction: column; margin-bottom: var(--sp-3); }
+.field label {
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: var(--fw-medium);
+}
+
+.input,
+.field input,
+.field select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-size: var(--fs-base);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.input::placeholder, .field input::placeholder { color: var(--text-faint); }
+.input:focus, .field input:focus {
+  outline: none;
+  border-color: var(--brand-2);
+  box-shadow: 0 0 0 3px rgba(234, 93, 11, 0.18);
+}
+.input.has-error { border-color: var(--red); }
+
+.field-error {
+  color: var(--red);
+  font-size: var(--fs-2xs);
+  margin-top: 4px;
+}
+
+.input-group { position: relative; display: flex; align-items: center; }
+.input-group .input { padding-right: 42px; }
+.input-group-icon {
+  position: absolute;
+  right: 12px;
+  color: var(--text-dim);
+  display: flex;
+}
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - var(--navbar-h));
+  padding: var(--sp-4);
+  background:
+    radial-gradient(600px 300px at 50% 0%, rgba(234, 93, 11, 0.12), transparent 70%),
+    var(--bg-app);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-8) var(--sp-6);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-card .navbar-brand { font-size: var(--fs-2xl); }
+.auth-subtitle { color: var(--text-dim); margin: 4px 0 var(--sp-5); font-size: var(--fs-sm); }
+
+.auth-card .btn { margin-top: var(--sp-3); }
+
+.auth-switch {
+  text-align: center;
+  margin-top: var(--sp-5);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+.auth-switch a { color: var(--brand-1); font-weight: var(--fw-semibold); }
+.auth-switch a:hover { text-decoration: underline; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+  margin: var(--sp-4) 0;
+}
+.auth-divider::before, .auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--divider);
+}
+
+
+/* ==========================================================================
+   9. ALERTS & TOASTS
+   ========================================================================== */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: 12px var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  margin: var(--sp-2) 0;
+  border: 1px solid transparent;
+}
+.alert-error { background: var(--red-tint); color: #ffb3b8; border-color: rgba(239, 68, 68, 0.3); }
+.alert-success { background: var(--green-tint); color: #8ff0b3; border-color: rgba(34, 197, 94, 0.3); }
+.alert-info { background: var(--blue-chip-tint); color: #b7d3ff; border-color: rgba(79, 142, 247, 0.3); }
+
+.notification-stack {
+  position: fixed;
+  top: calc(var(--navbar-h) + var(--sp-3));
+  right: var(--sp-3);
+  left: var(--sp-3);
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  z-index: var(--z-toast);
+  pointer-events: none;
 }
-.auth-card h1 { color: var(--accent); margin-bottom: 0; }
-.auth-subtitle { color: var(--text-dim); margin-top: 4px; margin-bottom: 20px; }
-.auth-card label { font-size: 0.8rem; color: var(--text-dim); margin: 10px 0 4px; }
-.auth-card input {
-  background: var(--bg-panel-alt);
+@media (min-width: 768px) {
+  .notification-stack { left: auto; width: 340px; }
+}
+
+.notification {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: var(--text);
-  font-size: 0.95rem;
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 12px var(--sp-4);
+  box-shadow: var(--shadow-md);
+  font-size: var(--fs-sm);
+  width: 100%;
+  max-width: 340px;
+  pointer-events: auto;
+  animation: toast-in var(--dur-slow) var(--ease-out);
 }
-.auth-card .btn { margin-top: 20px; }
-.auth-switch { text-align: center; margin-top: 16px; color: var(--text-dim); font-size: 0.85rem; }
-.auth-switch a { color: var(--accent); font-weight: 600; }
+.notification-success { border-left-color: var(--green); }
+.notification-error { border-left-color: var(--red); }
+.notification-crash { border-left-color: var(--gold); }
 
-/* ---------------- Alerts ---------------- */
-.alert { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin: 8px 0; }
-.alert-error { background: rgba(239, 74, 95, 0.15); color: var(--red); border: 1px solid rgba(239,74,95,0.3); }
-.alert-success { background: rgba(33, 193, 124, 0.15); color: var(--green); border: 1px solid rgba(33,193,124,0.3); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-/* ---------------- Aviator game ---------------- */
-.aviator-game { display: flex; flex-direction: column; gap: 16px; }
+
+/* ==========================================================================
+   10. AVIATOR GAME — STAGE / SKY / PLANE / MULTIPLIER
+   ========================================================================== */
+
+.aviator-game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+@media (min-width: 1024px) {
+  .aviator-game {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-areas:
+      "stage panel"
+      "history panel"
+      "bets   panel";
+    align-items: start;
+    gap: var(--sp-4);
+  }
+  .aviator-game .game-stage-wrap { grid-area: stage; }
+  .aviator-game .game-history { grid-area: history; }
+  .aviator-game .live-bets { grid-area: bets; }
+  .aviator-game .betting-panel-wrap { grid-area: panel; }
+}
+
 .connection-badge {
-  display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  align-self: flex-end;
 }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
-.dot-connected { background: var(--green); }
-.dot-connecting { background: var(--gold); }
+.dot { width: 7px; height: 7px; border-radius: var(--radius-circle); background: var(--text-faint); }
+.dot-connected { background: var(--green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.7); }
+.dot-connecting { background: var(--gold); animation: dot-pulse 1s ease-in-out infinite; }
 .dot-disconnected { background: var(--red); }
 
-.game-history { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
-.history-chip { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
-.chip-gray { background: var(--bg-panel-alt); color: var(--text-dim); }
-.chip-blue { background: rgba(111, 92, 255, 0.2); color: #a79bff; }
-.chip-purple { background: rgba(255, 92, 138, 0.2); color: var(--accent); }
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---- Stage ------------------------------------------------------------- */
 
 .game-stage {
   position: relative;
-  background: radial-gradient(circle at 30% 20%, #182036, var(--bg-panel));
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  height: 380px;
+  height: var(--stage-h-mobile);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  background:
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-low) 100%);
+  isolation: isolate;
 }
-.game-status-label { position: absolute; top: 16px; color: var(--text-dim); font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
+
+@media (min-width: 768px) { .game-stage { height: var(--stage-h-tablet); } }
+@media (min-width: 1024px) { .game-stage { height: var(--stage-h-desktop); } }
+
+/* soft horizon band + distant hills, purely decorative */
+.game-stage::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 22%;
+  background: linear-gradient(180deg, transparent, var(--sky-horizon) 90%);
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.game-stage-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--stage-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--stage-grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.game-status-label {
+  position: absolute;
+  top: var(--sp-4);
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(20, 25, 40, 0.55);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  z-index: 3;
+}
 
 .multiplier {
-  font-size: 3.4rem;
-  font-weight: 800;
-  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 9vw, var(--fs-multiplier));
+  font-weight: var(--fw-black);
+  color: #16181f;
   z-index: 2;
-  text-shadow: 0 0 30px rgba(255,255,255,0.15);
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.25);
+  transition: color var(--dur-base) var(--ease-out);
 }
-.multiplier.crashed { color: var(--red); }
+.multiplier.rising { color: #14151f; }
+.multiplier.crashed {
+  color: var(--red-deep);
+  animation: multiplier-shake 0.4s var(--ease-out);
+}
 
-.countdown { position: absolute; bottom: 16px; color: var(--gold); font-size: 0.9rem; z-index: 2; }
+@keyframes multiplier-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
 
-.plane-track { position: absolute; inset: 0; }
-.plane-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
-.trail-path { fill: none; stroke: var(--accent); stroke-width: 0.6; opacity: 0.5; }
-.trail-active { opacity: 0.9; }
+.countdown {
+  position: absolute;
+  bottom: var(--sp-4);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--brand-4);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+}
+.countdown-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--brand-gradient-flat);
+  z-index: 3;
+  transition: width 100ms linear;
+}
+
+/* ---- Plane --------------------------------------------------------------
+   Positioning contract for Plane.jsx:
+   The plane's flight path is driven entirely by JS via three CSS custom
+   properties set as inline styles on .plane-icon, updated every animation
+   frame as the multiplier climbs:
+
+     --plane-x   : 0 to 1   (0 = stage left edge, 1 = stage right edge)
+     --plane-y   : 0 to 1   (0 = stage bottom, 1 = stage top)
+     --plane-rot : degrees  (nose angle, e.g. -8 to -34deg as it climbs)
+
+   Clamp --plane-x to max 0.82 and --plane-y to max 0.78 in JS so the plane
+   NEVER reaches the stage edges — it should look like it's always about to
+   fly off-screen but never does, until it crashes. A curved SVG path
+   (.trail-path) can be drawn through the same coordinate space for the
+   climbing trail.
+   -------------------------------------------------------------------- */
+
+.plane-track {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.plane-trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.trail-path {
+  fill: none;
+  stroke: var(--brand-2);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.45;
+  stroke-dasharray: 6 8;
+}
+.trail-path.trail-active {
+  opacity: 0.85;
+  stroke-dasharray: none;
+}
+
 .plane-icon {
   position: absolute;
-  top: 0; left: 0;
-  font-size: 1.8rem;
-  color: var(--gold);
-  transition: transform 0.1s linear, opacity 0.3s ease;
+  width: 64px;
+  height: 64px;
+  left: calc(8% + var(--plane-x, 0) * 74%);
+  bottom: calc(10% + var(--plane-y, 0) * 68%);
+  background-image: url("../src/assets/plane.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transform: translate(-50%, 50%) rotate(var(--plane-rot, -6deg));
+  transform-origin: center;
+  will-change: left, bottom, transform;
+  transition: left 90ms linear, bottom 90ms linear, transform 90ms linear;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
+  z-index: 2;
 }
-.plane-crashed { color: var(--red); }
-.crash-burst { position: absolute; top: 40%; left: 40%; font-size: 2rem; color: var(--red); animation: pop 0.4s ease; }
-@keyframes pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-.crash-animation { position: absolute; inset: 0; pointer-events: none; }
-.crash-particle {
-  position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent);
-  animation: burst 0.6s ease-out forwards;
-  animation-delay: var(--delay);
+@media (min-width: 768px) { .plane-icon { width: 84px; height: 84px; } }
+@media (min-width: 1024px) { .plane-icon { width: 104px; height: 104px; } }
+
+/* Idle bob before round starts / while climbing steadily, layered on top
+   of the JS-driven transform via a pseudo wrapper class toggle. Keep this
+   subtle — the primary motion must always read as JS-driven, not looping. */
+.plane-icon.plane-flying {
+  animation: plane-bob 1.8s ease-in-out infinite;
 }
-@keyframes burst {
+@keyframes plane-bob {
+  0%, 100% { margin-top: 0px; }
+  50% { margin-top: -4px; }
+}
+
+.plane-icon.plane-crashed {
+  animation: plane-fall 0.5s var(--ease-in-out) forwards;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25)) saturate(0.4) brightness(0.85);
+}
+@keyframes plane-fall {
+  0% { opacity: 1; }
+  60% { transform: translate(-50%, 50%) rotate(70deg) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, 120%) rotate(120deg) scale(0.8); opacity: 0; }
+}
+
+/* Small exhaust / smoke puff trailing the plane while climbing */
+.plane-smoke {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.5);
+  animation: smoke-puff 900ms ease-out forwards;
+  z-index: 1;
+}
+@keyframes smoke-puff {
+  0% { opacity: 0.6; transform: scale(0.4); }
+  100% { opacity: 0; transform: scale(1.8) translateY(6px); }
+}
+
+
+/* ==========================================================================
+   11. CRASH ANIMATION
+   ========================================================================== */
+
+.crash-animation {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.crash-burst {
+  position: absolute;
+  font-size: 2rem;
+  color: var(--red);
+  animation: burst-pop 0.4s var(--ease-out);
+  z-index: 4;
+}
+@keyframes burst-pop {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.crash-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-circle);
+  background: var(--red);
+  animation: crash-burst-particle 650ms ease-out forwards;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes crash-burst-particle {
   to {
-    transform: rotate(var(--angle)) translateX(var(--distance));
+    transform: rotate(var(--angle, 0deg)) translateX(var(--distance, 60px));
     opacity: 0;
   }
 }
+
+.crash-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(239, 68, 68, 0.25);
+  animation: crash-flash 350ms ease-out forwards;
+  z-index: 3;
+}
+@keyframes crash-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .crash-label {
-  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-  color: var(--red); font-weight: 700;
+  position: absolute;
+  bottom: var(--sp-8);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+  background: var(--red-deep);
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md);
+  z-index: 5;
+  animation: crash-label-in 0.3s var(--ease-out);
+}
+@keyframes crash-label-in {
+  from { opacity: 0; transform: translate(-50%, 8px) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
-/* ---------------- Betting panel ---------------- */
-.betting-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
-.amount-control { display: flex; align-items: center; gap: 8px; }
+
+/* ==========================================================================
+   12. GAME HISTORY CHIPS
+   ========================================================================== */
+
+.game-history {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: var(--sp-1) 0 var(--sp-2);
+  scrollbar-width: none;
+}
+.game-history::-webkit-scrollbar { display: none; }
+
+.history-chip {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+/* tiers follow standard crash-game convention:
+   < 2x low, 2x–10x mid, >= 10x high */
+.chip-low  { background: var(--blue-chip-tint);   color: var(--blue-chip); }
+.chip-mid  { background: var(--purple-chip-tint); color: var(--purple-chip); }
+.chip-high { background: var(--pink-chip-tint);   color: var(--pink-chip); }
+
+
+/* ==========================================================================
+   13. BETTING PANEL
+   ========================================================================== */
+
+.betting-panel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Two bet slots side-by-side on wide screens, stacked on phones */
+.betting-panels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+@media (min-width: 560px) and (max-width: 1023px) {
+  .betting-panels { flex-direction: row; }
+  .betting-panels .betting-panel { flex: 1; }
+}
+@media (min-width: 1024px) {
+  .betting-panels { flex-direction: column; }
+}
+
+.betting-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.betting-panel-tabs {
+  display: flex;
+  background: var(--bg-panel-alt);
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+.betting-panel-tab {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--text-dim);
+  border-radius: calc(var(--radius-md) - 3px);
+}
+.betting-panel-tab.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.amount-control {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.amount-control-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+}
+.amount-control-btn:active { background: var(--bg-hover); }
 .amount-control input {
-  flex: 1; text-align: center; background: var(--bg-panel-alt); border: 1px solid var(--border);
-  color: var(--text); border-radius: 8px; padding: 10px; font-size: 1.1rem;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
 }
-.quick-amounts { display: flex; gap: 8px; }
-.betting-panel-hint { color: var(--text-dim); font-size: 0.8rem; text-align: center; }
 
-.cashout-result { padding: 14px; border-radius: var(--radius); text-align: center; font-weight: 700; }
-.cashout-result.success { background: rgba(33, 193, 124, 0.15); color: var(--green); }
-.cashout-result.lost { background: rgba(239, 74, 95, 0.15); color: var(--red); }
+.quick-amounts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
 
-/* ---------------- Live bets / bet cards ---------------- */
-.live-bets { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-.live-bets-empty, .empty-state { color: var(--text-dim); font-size: 0.85rem; }
+.betting-panel-hint {
+  color: var(--text-faint);
+  font-size: var(--fs-2xs);
+  text-align: center;
+}
 
-.bet-card { background: var(--bg-panel-alt); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 8px; }
-.bet-card.won { border-color: var(--green); }
-.bet-card.lost { border-color: var(--red); opacity: 0.7; }
-.bet-card-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
-.bet-card-amount { font-weight: 700; }
-.bet-card-detail { color: var(--green); font-size: 0.85rem; margin-top: 4px; }
-.bet-card-round { color: var(--text-dim); font-size: 0.7rem; margin-top: 4px; }
+.auto-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
 
-.betting-history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.cashout-result {
+  padding: var(--sp-4);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-md);
+  animation: result-in var(--dur-base) var(--ease-out);
+}
+.cashout-result.success { background: var(--green-tint); color: var(--green); }
+.cashout-result.lost { background: var(--red-tint); color: var(--red); }
+@keyframes result-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-/* ---------------- Notifications ---------------- */
-.notification-stack { position: fixed; top: 80px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-.notification { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow); font-size: 0.85rem; }
-.notification-success { border-color: var(--green); color: var(--green); }
-.notification-error { border-color: var(--red); color: var(--red); }
-.notification-crash { border-color: var(--gold); color: var(--gold); }
 
-/* ---------------- Dashboard / generic pages ---------------- */
-.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+/* ==========================================================================
+   14. LIVE BETS / BET CARDS
+   ========================================================================== */
+
+.live-bets {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.live-bets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+.live-bets-tabs { display: flex; gap: var(--sp-1); }
+.live-bets-count { color: var(--text-faint); font-size: var(--fs-xs); }
+
+.live-bets-empty, .empty-state {
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+  text-align: center;
+  padding: var(--sp-6) 0;
+}
+
+.bet-card {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  margin-top: var(--sp-2);
+  transition: border-color var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out);
+}
+.bet-card.won { border-color: var(--green); background: var(--green-tint); }
+.bet-card.lost { border-color: var(--red-deep); opacity: 0.72; }
+.bet-card.active-bet { border-color: var(--gold); }
+
+.bet-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-sm);
+}
+.bet-card-player { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); }
+.bet-card-avatar { width: 22px; height: 22px; border-radius: var(--radius-circle); background: var(--bg-elevated); flex-shrink: 0; }
+.bet-card-amount { font-weight: var(--fw-bold); font-family: var(--font-mono); }
+.bet-card-detail { color: var(--green); font-size: var(--fs-xs); margin-top: 4px; font-weight: var(--fw-semibold); }
+.bet-card-round { color: var(--text-faint); font-size: var(--fs-2xs); margin-top: 4px; }
+
+.bet-card-multiplier-tag {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+
+/* ==========================================================================
+   15. BETTING HISTORY PAGE
+   ========================================================================== */
+
+.betting-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-3);
+}
+
+.history-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); }
+
+.history-table {
+  min-width: 560px;
+  background: var(--bg-panel);
+}
+.history-table th {
+  text-align: left;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-2xs);
+  color: var(--text-faint);
+  font-weight: var(--fw-semibold);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.history-table td {
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-sm);
+  border-bottom: 1px solid var(--divider);
+}
+.history-table tr:last-child td { border-bottom: none; }
+.history-table tr:hover td { background: var(--bg-hover); }
+
+
+/* ==========================================================================
+   16. DASHBOARD
+   ========================================================================== */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+@media (min-width: 640px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(3, 1fr); } }
+
 .dashboard-card, .wallet-page-card, .profile-card {
-  background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-inset);
 }
-.wallet-balance { display: flex; flex-direction: column; gap: 8px; }
-.wallet-balance-label { color: var(--text-dim); font-size: 0.85rem; }
-.wallet-balance-amount { font-size: 1.8rem; font-weight: 800; color: var(--gold); }
 
-.transaction-list { display: flex; flex-direction: column; gap: 6px; }
-.transaction-row { display: grid; grid-template-columns: 24px 1fr auto auto; gap: 12px; align-items: center; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
-.transaction-info { display: flex; flex-direction: column; }
-.transaction-type { font-weight: 600; font-size: 0.85rem; }
-.transaction-date { color: var(--text-dim); font-size: 0.7rem; }
-.transaction-amount { font-weight: 700; }
-.transaction-balance { color: var(--text-dim); font-size: 0.75rem; }
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+.dashboard-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-gradient);
+  color: #fff;
+}
+.dashboard-card-value {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+}
+.dashboard-card-label { color: var(--text-dim); font-size: var(--fs-sm); }
+.dashboard-card-delta { font-size: var(--fs-xs); font-weight: var(--fw-semibold); }
+.dashboard-card-delta.up { color: var(--green); }
+.dashboard-card-delta.down { color: var(--red); }
+
+
+/* ==========================================================================
+   17. WALLET
+   ========================================================================== */
+
+.wallet-balance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.wallet-balance-label { color: var(--text-dim); font-size: var(--fs-sm); }
+.wallet-balance-amount {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  font-weight: var(--fw-black);
+  color: var(--gold);
+}
+
+.wallet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+
+/* ==========================================================================
+   18. TRANSACTIONS
+   ========================================================================== */
+
+.transaction-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.transaction-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: var(--sp-3);
+  align-items: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3) var(--sp-4);
+}
+@media (min-width: 480px) {
+  .transaction-row { grid-template-columns: 32px 1fr auto auto; }
+}
+
+.transaction-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel-alt);
+}
+.transaction-info { display: flex; flex-direction: column; min-width: 0; }
+.transaction-type { font-weight: var(--fw-semibold); font-size: var(--fs-sm); }
+.transaction-date { color: var(--text-faint); font-size: var(--fs-2xs); }
+.transaction-amount { font-weight: var(--fw-bold); font-family: var(--font-mono); text-align: right; }
+.transaction-balance { color: var(--text-faint); font-size: var(--fs-2xs); text-align: right; }
 .tx-credit { color: var(--green); }
 .tx-debit { color: var(--red); }
 
-/* ---------------- Sidebar (optional layout) ---------------- */
-.sidebar { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
-.sidebar-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; color: var(--text-dim); font-size: 0.9rem; }
-.sidebar-link.active, .sidebar-link:hover { background: var(--bg-panel-alt); color: var(--text); }
 
-/* ---------------- Misc ---------------- */
-.loading-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 60px; color: var(--text-dim); }
-.spinner { width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+/* ==========================================================================
+   19. PROFILE
+   ========================================================================== */
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-circle);
+  background: var(--brand-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-xl);
+  color: #fff;
+  flex-shrink: 0;
+}
+.profile-name { font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+.profile-meta { color: var(--text-dim); font-size: var(--fs-sm); }
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.profile-stat { text-align: center; }
+.profile-stat-value { font-weight: var(--fw-bold); font-size: var(--fs-lg); }
+.profile-stat-label { color: var(--text-faint); font-size: var(--fs-2xs); }
+
+
+/* ==========================================================================
+   20. LOADING / EMPTY / 404
+   ========================================================================== */
+
+.loading-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-16) 0;
+  color: var(--text-dim);
+}
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--border);
+  border-top-color: var(--brand-2);
+  border-radius: var(--radius-circle);
+  animation: spin 0.8s linear infinite;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.page-not-found { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 80px 0; color: var(--text-dim); }
+.page-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-16) var(--sp-4);
+  color: var(--text-dim);
+  text-align: center;
+}
+.page-not-found-code {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 12vw, 6rem);
+  font-weight: var(--fw-black);
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1;
+}
+
+
+/* ==========================================================================
+   21. SCROLLBARS / SELECTION / FOCUS
+   ========================================================================== */
+
+::selection { background: var(--brand-2); color: #fff; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+:focus-visible {
+  outline: 2px solid var(--brand-1);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+
+/* ==========================================================================
+   22. RESPONSIVE SUMMARY
+   ========================================================================== *
+   Mobile-first throughout. Phones get the single-column stacked layout
+   (stage → history → panel → live bets), tablets get a two-column split
+   for bet slots, and the two-column game-grid (stage/history/bets left,
+   sticky betting panel right) only activates at 1024px, matching the
+   reference layout where the bet slate sits fixed while the stage plays.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   23. REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

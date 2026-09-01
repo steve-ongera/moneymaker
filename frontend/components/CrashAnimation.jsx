@@ -1,3 +1,4 @@
+//components/CrashAnimation.jsx
 import { useEffect, useState } from "react";
 
 /**

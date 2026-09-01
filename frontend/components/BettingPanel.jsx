@@ -1,3 +1,4 @@
+//components/BettingPanel.jsx
 import { useState } from "react";
 import { useAviator } from "../hooks/useAviator.js";
 import { useWallet } from "../hooks/useWallet.js";

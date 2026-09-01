@@ -1,3 +1,4 @@
+//components/GameHistory.jsx
 import { useAviator } from "../hooks/useAviator.js";
 
 function colorClass(mult) {

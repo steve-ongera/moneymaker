@@ -1,3 +1,4 @@
+//components/Navbar.jsx
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useWallet } from "../hooks/useWallet.js";

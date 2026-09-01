@@ -1,3 +1,4 @@
+//components/AviatorGame.jsx
 import { useAviator } from "../hooks/useAviator.js";
 import Plane from "./Plane.jsx";
 import Multiplier from "./Multiplier.jsx";
