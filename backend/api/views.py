@@ -1116,3 +1116,56 @@ class AdminCurrentRoundView(APIView):
             "total_payout": str(total_payout),
             "running_profit": str(total_staked - total_payout),
         })
+        
+        
+
+from .models import EngineControl
+
+class AdminEngineStatusView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def get(self, request):
+        control = EngineControl.get_solo()
+        return Response({
+            "is_paused": control.is_paused,
+            "paused_by": control.paused_by.username if control.paused_by else None,
+            "paused_at": control.paused_at.isoformat() if control.paused_at else None,
+            "reason": control.reason,
+        })
+
+
+class AdminEnginePauseView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def post(self, request):
+        reason = request.data.get("reason", "")
+        control = EngineControl.get_solo()
+        control.is_paused = True
+        control.paused_by = request.user
+        control.paused_at = timezone.now()
+        control.reason = reason
+        control.save()
+
+        _log(request.user, "engine.paused", {"reason": reason}, request)
+
+        return Response({
+            "success": True,
+            "message": "Engine will stop after the current round settles.",
+            "is_paused": True,
+        })
+
+
+class AdminEngineResumeView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def post(self, request):
+        control = EngineControl.get_solo()
+        control.is_paused = False
+        control.paused_by = None
+        control.paused_at = None
+        control.reason = ""
+        control.save()
+
+        _log(request.user, "engine.resumed", {}, request)
+
+        return Response({"success": True, "message": "Engine resumed.", "is_paused": False})

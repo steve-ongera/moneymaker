@@ -49,6 +49,7 @@ class AdminOTPAdmin(admin.ModelAdmin):
         "created_at",
     )
 
+
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
     list_display = ("user", "balance", "currency", "updated_at")
