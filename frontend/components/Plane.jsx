@@ -1,80 +1,93 @@
-//components/Plane.jsx
 import { useEffect, useRef, useState } from "react";
 import planeImg from "../src/assets/plane.png";
-
-/**
- * Purely visual. Position is derived from `multiplier` and `crashed`, both
- * of which come from GameContext (server-driven). This component never
- * decides outcomes — it only animates what it's told.
- *
- * Rendered as two nested layers (see style/main.css, "Plane" section):
- *   .plane-icon (position, smooth CSS transition) > .plane-sprite (artwork)
- * No rotation and no wobble/strain shake — the plane stays level and moves
- * smoothly along the flight path, matching the straight triangular trail
- * beneath it with no jitter.
- *
- * Flight path contract:
- *   --plane-x / --plane-y are 0..1 fractions of the stage. They're clamped
- *   well short of 1 so the plane always looks like it's climbing but never
- *   reaches the stage edge — the crash animation is the only thing that
- *   "ends" the flight visually.
- *
- * Trail: a straight-edged triangular wedge from the launch point to the
- * plane's tail — filled with a gradient that's bright near the plane and
- * fades toward the launch point. The tail point is pulled back from the
- * plane's position anchor along the flight direction so the wedge visually
- * meets the back of the plane instead of stopping at its geometric center.
- */
 
 const MAX_X = 0.82;
 const MAX_Y = 0.78;
 
 function flightProgress(multiplier) {
-  // Log curve: fast climb early, easing off as the multiplier grows, which
-  // reads more like real flight than a linear march to the corner.
   const raw = Math.log(Math.max(multiplier, 1)) / Math.log(20);
   return Math.min(Math.max(raw, 0), 1);
 }
 
 export default function Plane({ multiplier, crashed, running }) {
-  const progress = flightProgress(multiplier);
+  // Smooth interpolated value for rendering frame-by-frame
+  const [smoothMultiplier, setSmoothMultiplier] = useState(multiplier || 1);
+  const targetMultiplierRef = useRef(multiplier || 1);
+  const animFrameRef = useRef(null);
+
+  // Keep target updated with incoming server multiplier props
+  useEffect(() => {
+    targetMultiplierRef.current = multiplier;
+  }, [multiplier]);
+
+  // Smoothly interpolate smoothMultiplier toward targetMultiplier using rAF
+  useEffect(() => {
+    if (!running || crashed) {
+      if (!running) setSmoothMultiplier(1);
+      return;
+    }
+
+    let lastTime = performance.now();
+
+    const animate = (now) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      setSmoothMultiplier((prev) => {
+        const target = targetMultiplierRef.current;
+        const diff = target - prev;
+
+        if (Math.abs(diff) < 0.0001) return target;
+
+        // Smooth exponential lerp
+        const lerpFactor = 1 - Math.exp(-12 * dt);
+        return prev + diff * lerpFactor;
+      });
+
+      animFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [running, crashed]);
+
+  // Derive flight visual coordinates from interpolated smoothMultiplier
+  const progress = flightProgress(smoothMultiplier);
   const x = progress * MAX_X;
   const y = progress * MAX_Y;
   const scale = 1 + progress * 0.18;
 
-  // Ground shadow: shrinks and fades as altitude increases.
+  // Ground shadow
   const shadowScale = Math.max(1 - progress * 0.7, 0.25);
   const shadowOpacity = Math.max(0.32 - progress * 0.26, 0.04);
 
-  // Trail path drawn through the same coordinate space as .plane-icon
-  // (left: 8% + x*74%, bottom: 10% + y*68%), converted to SVG's top-down Y.
+  // Trail coordinates
   const startLeft = 8;
   const startBottom = 10;
   const endLeft = 8 + x * 74;
   const endBottom = 10 + y * 68;
 
-  // Pull the trail's endpoint back from the plane's position anchor along
-  // the flight direction, so the wedge meets the tail of the sprite rather
-  // than its center. Offset grows slightly with progress since the sprite
-  // itself scales up as it climbs.
+  // Calculate direction vector to pull back the trail end by a small gap
   const dxRaw = endLeft - startLeft;
   const dyRaw = endBottom - startBottom;
   const dist = Math.hypot(dxRaw, dyRaw) || 1;
   const dirX = dxRaw / dist;
   const dirY = dyRaw / dist;
-  const tailOffset = 3 + progress * 2.5; // % of stage
+
+  // Small offset value to create a subtle space between the plane tail and trail
+  const tailOffset = 5.9 + progress * 0.6; // % of stage width
   const tailLeft = endLeft - dirX * tailOffset;
   const tailBottom = endBottom - dirY * tailOffset;
 
-  // Straight-line trail: a simple triangle from launch point to the plane's
-  // tail, closed down to the launch-height baseline.
   const topY = 100 - startBottom;
   const tailY = 100 - tailBottom;
   const linePath = `M ${startLeft} ${topY} L ${tailLeft} ${tailY}`;
   const fillPath = `${linePath} L ${tailLeft} ${topY} L ${startLeft} ${topY} Z`;
 
-  // Light smoke trail while climbing — a periodic wisp, not a CSS loop, so
-  // it visibly thins out if the round stalls rather than animating forever.
+  // Smoke trail logic
   const [smoke, setSmoke] = useState([]);
   const posRef = useRef({ left: endLeft, bottom: endBottom });
   posRef.current = { left: endLeft, bottom: endBottom };

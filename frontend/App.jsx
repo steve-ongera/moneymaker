@@ -10,6 +10,7 @@ import Wallet from "./pages/Wallet.jsx";
 import Transactions from "./pages/Transactions.jsx";
 import BettingHistory from "./pages/BettingHistory.jsx";
 import Profile from "./pages/Profile.jsx";
+import Terms from "./pages/Terms.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/terms" element={<Terms />} />
 
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/play" element={<ProtectedRoute><Aviator /></ProtectedRoute>} />

@@ -1264,9 +1264,9 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   justify-content: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
-  
+  background: transparent;
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
 }
 
 .multiplier.rising {
@@ -1282,8 +1282,8 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 .multiplier.crashed {
   color: var(--red-deep);
   animation: multiplier-shake 0.5s var(--ease-out);
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: transparent;
+  border-color: transparent;
   text-shadow: 0 2px 0 rgba(239, 68, 68, 0.2);
 }
 
@@ -1328,7 +1328,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
     font-size: clamp(2rem, 8vw, 3rem);
     padding: var(--sp-2);
     backdrop-filter: none;
-    background: rgba(255, 255, 255, 0.1);
+    background: transparent;
   }
 
   .multiplier-trend svg {
@@ -1342,7 +1342,7 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
   .multiplier {
     font-size: clamp(4rem, 8vw, 6rem);
     padding: var(--sp-3) var(--sp-6);
-    background: rgba(255, 255, 255, 0.12);
+    background: transparent;
   }
 }
 
@@ -1525,21 +1525,15 @@ p { margin: 0 0 var(--sp-3); color: var(--text-secondary); }
 }
 @media (min-width: 768px) { .plane-shadow { width: 60px; height: 14px; } }
 
-/* Position + scale only — no rotation, so the sprite stays level the whole
-   flight. A linear transition keeps it gliding smoothly along the same
-   straight track as the trail wedge, with no jitter or shake. */
+/* Base size for mobile / small screens */
 .plane-icon {
   position: absolute;
   width: 64px;
   height: 64px;
-  left: calc(8% + var(--plane-x, 0) * 74%);
-  bottom: calc(10% + var(--plane-y, 0) * 68%);
+  left: calc(8% + var(--plane-x) * 74%);
+  bottom: calc(10% + var(--plane-y) * 68%);
   transform: translate(-50%, 50%) scale(var(--plane-scale, 1));
-  transform-origin: center;
-  will-change: left, bottom;
-  transition: left 120ms linear, bottom 120ms linear, transform 120ms linear;
-  z-index: 2;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
+  transition: transform 0.05s linear; 
 }
 
 @media (min-width: 768px) { .plane-icon { width: 84px; height: 84px; } }

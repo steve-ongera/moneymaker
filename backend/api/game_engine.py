@@ -27,8 +27,8 @@ from django.conf import settings
 from django.utils import timezone
 
 from .fairness import compute_crash_multiplier, generate_server_seed, hash_server_seed
-from .models import GameRound
-from .wallet import WalletService
+from .models import Bet, GameRound
+from .wallet import DuplicateRequest, InvalidBetState, WalletService
 
 logger = logging.getLogger("aviator.engine")
 
@@ -100,8 +100,13 @@ class RoundEngine:
             multiplier = calculate_multiplier(elapsed)
 
             if multiplier >= round_obj.crash_multiplier:
+                # Settle anyone whose target sits exactly at/under the crash point
+                # on this final tick before the round actually crashes.
+                await self._process_auto_cashouts(round_obj, multiplier)
                 await self._crash_round(round_obj)
                 return
+
+            await self._process_auto_cashouts(round_obj, multiplier)
 
             await self._broadcast({
                 "type": "multiplier.update",
@@ -110,6 +115,52 @@ class RoundEngine:
                 "server_time": timezone.now().isoformat(),
             })
             await asyncio.sleep(BROADCAST_INTERVAL_SECONDS)
+
+    # ----------------------------------------------------------
+    # Auto cash-out — settles every active bet whose target has been
+    # reached on THIS tick, independently of any client request. This is
+    # what lets a 4.0x target and a 4.2x target both cash out "simultaneously"
+    # (i.e. each the moment the live multiplier crosses it) instead of racing
+    # a manual button click against network latency and the crash itself.
+    # ----------------------------------------------------------
+    async def _process_auto_cashouts(self, round_obj: GameRound, multiplier: Decimal):
+        settled = await sync_to_async(self._process_auto_cashouts_sync)(round_obj, multiplier)
+        for bet, wallet_balance in settled:
+            await self._notify_user(bet.user_id, {
+                "type": "cashout.success",
+                "bet_id": str(bet.id),
+                "multiplier": str(bet.cashout_multiplier),
+                "payout": str(bet.payout),
+                "balance": str(wallet_balance),
+                "auto": True,
+            })
+
+    def _process_auto_cashouts_sync(self, round_obj: GameRound, multiplier: Decimal):
+        due_bets = list(
+            Bet.objects.select_related("user").filter(
+                round=round_obj,
+                status=Bet.Status.ACTIVE,
+                auto_cashout_multiplier__isnull=False,
+                auto_cashout_multiplier__lte=multiplier,
+            )
+        )
+
+        settled = []
+        for bet in due_bets:
+            try:
+                updated_bet = WalletService.cashout(
+                    user=bet.user,
+                    bet_id=bet.id,
+                    current_multiplier=bet.auto_cashout_multiplier,
+                    request_id=f"auto:{bet.id}",
+                )
+            except (InvalidBetState, DuplicateRequest):
+                # Already settled — e.g. the player manually cashed out a
+                # moment earlier than their own auto target. Not an error.
+                continue
+            wallet = WalletService.get_or_create_wallet(bet.user)
+            settled.append((updated_bet, wallet.balance))
+        return settled
 
     # ----------------------------------------------------------
     # DB-touching helpers (wrapped for the async loop)
@@ -146,7 +197,6 @@ class RoundEngine:
                     continue
         raise RuntimeError("Could not allocate a unique round_id after 5 attempts")
 
-
     async def _save(self, round_obj: GameRound):
         await sync_to_async(round_obj.save)()
 
@@ -178,6 +228,11 @@ class RoundEngine:
         await self.channel_layer.group_send(
             GROUP_NAME,
             {"type": "engine.event", "payload": payload},
+        )
+
+    async def _notify_user(self, user_id: int, payload: dict):
+        await self.channel_layer.group_send(
+            f"user_{user_id}", {"type": "user.event", "payload": payload}
         )
 
 

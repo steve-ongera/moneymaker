@@ -179,6 +179,11 @@ export default function Register() {
           </div>
         </div>
 
+        <p className="auth-terms-disclaimer">
+          By creating an account, you confirm that you are at least 18 years old and agree to our{" "}
+          <Link to="/terms">Terms &amp; Conditions</Link>.
+        </p>
+
         <button className="btn btn-primary btn-block btn-large" type="submit" disabled={submitting}>
           {submitting ? (
             <>
