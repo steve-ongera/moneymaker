@@ -281,3 +281,27 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} by {self.user_id} at {self.created_at}"
+    
+    
+
+class EngineControl(models.Model):
+    """
+    Singleton row (always pk=1) controlling whether the round engine starts new
+    rounds. Pausing NEVER interrupts a round already in progress — the engine
+    only checks this flag between rounds, after the current one has crashed
+    and settled honestly against its pre-committed crash point.
+    """
+    is_paused = models.BooleanField(default=False)
+    paused_by = models.ForeignKey(
+        "User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    paused_at = models.DateTimeField(null=True, blank=True)
+    reason = models.CharField(max_length=255, blank=True, default="")
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return "Engine: PAUSED" if self.is_paused else "Engine: running"
