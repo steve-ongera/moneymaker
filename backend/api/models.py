@@ -25,6 +25,37 @@ class User(AbstractUser):
         return self.username
 
 
+
+class AdminOTP(models.Model):
+    """
+    One-time-passcode used for the two-step admin login flow.
+    Step 1 (email+password) creates one of these and emails `code_hash`'s
+    plaintext to the admin; step 2 verifies it against `login_token`.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="admin_otps")
+    code_hash = models.CharField(max_length=128)
+    login_token = models.CharField(max_length=64, unique=True)
+    is_used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    class Meta:
+        indexes = [
+            models.Index(fields=["login_token"]),
+            models.Index(fields=["user", "is_used"]),
+        ]
+ 
+    def __str__(self):
+        return f"AdminOTP for {self.user.username} (used={self.is_used})"
+ 
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+ 
+
 # ============================================================
 # Wallet
 # ============================================================
