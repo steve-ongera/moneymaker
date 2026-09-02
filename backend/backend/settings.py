@@ -148,6 +148,8 @@ REST_FRAMEWORK = {
         "anon": "30/minute",
         "bet": "60/minute",
         "cashout": "120/minute",
+        "admin_login": "10/hour",
+        "admin_otp": "20/hour",
     },
     "EXCEPTION_HANDLER": "api.exceptions.custom_exception_handler",
 }
@@ -214,3 +216,11 @@ LOGGING = {
         "aviator.views": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "..."
+EMAIL_HOST_PASSWORD = "..."

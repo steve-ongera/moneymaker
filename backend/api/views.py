@@ -751,3 +751,338 @@ class FairnessVerifyView(APIView):
             "recomputed_hash": recomputed_hash,
             "recomputed_crash_multiplier": str(recomputed_multiplier),
         })
+        
+        
+    
+import random
+import secrets
+from datetime import timedelta
+
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
+from rest_framework import generics, status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .admin_permissions import IsPlatformAdmin
+from .serializers import (
+    AdminBetSerializer,
+    AdminLoginStep1Serializer,
+    AdminOTPResendSerializer,
+    AdminOTPVerifySerializer,
+    AdminRoundSerializer,
+    AdminTransactionSerializer,
+    AdminUserSerializer,
+)
+from .models import AdminOTP, AuditLog, Bet, Deposit, GameRound, User, Wallet, WalletTransaction, Withdrawal
+
+OTP_TTL_MINUTES = 5
+OTP_MAX_ATTEMPTS = 5
+GENERIC_LOGIN_ERROR = "Invalid credentials or not authorized."
+
+
+def _log(user, action, meta=None, request=None):
+    AuditLog.objects.create(
+        user=user,
+        action=action,
+        meta=meta or {},
+        ip_address=request.META.get("REMOTE_ADDR") if request else None,
+    )
+
+
+def _issue_otp(user):
+    code = f"{random.randint(0, 999999):06d}"
+    login_token = secrets.token_urlsafe(32)
+
+    AdminOTP.objects.create(
+        user=user,
+        code_hash=make_password(code),
+        login_token=login_token,
+        expires_at=timezone.now() + timedelta(minutes=OTP_TTL_MINUTES),
+    )
+
+    if settings.DEBUG:
+        print("\n" + "=" * 50)
+        print("MONEYMAKER ADMIN OTP")
+        print("=" * 50)
+        print(f"User:  {user.email}")
+        print(f"OTP:   {code}")
+        print(f"Token: {login_token}")
+        print(f"Expires: {OTP_TTL_MINUTES} minutes")
+        print("=" * 50 + "\n")
+    else:
+        send_mail(
+            subject="Your MoneyMaker Admin login code",
+            message=(
+                f"Your admin login code is: {code}\n\n"
+                f"It expires in {OTP_TTL_MINUTES} minutes. "
+                f"If you did not request this, ignore this email."
+            ),
+            from_email=getattr(
+                settings,
+                "DEFAULT_FROM_EMAIL",
+                "no-reply@moneymakeraviator.com",
+            ),
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+    return login_token
+
+
+class AdminLoginThrottle(AnonRateThrottle):
+    scope = "admin_login"
+
+
+class AdminOTPThrottle(AnonRateThrottle):
+    scope = "admin_otp"
+
+
+# ============================================================
+# Step 1: email + password -> emails an OTP, returns a login_token
+# ============================================================
+class AdminLoginStep1View(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AdminLoginThrottle]
+
+    def post(self, request):
+        serializer = AdminLoginStep1Serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = authenticate(
+            request=request,
+            email=serializer.validated_data["email"],
+            password=serializer.validated_data["password"],
+        )
+
+        # Same generic error whether the password was wrong or the account
+        # simply isn't staff — never reveal which, to avoid enumerating admins.
+        if not user or not user.is_staff or not user.is_active:
+            return Response({"error": {"message": GENERIC_LOGIN_ERROR}}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.email:
+            return Response(
+                {"error": {"message": "This admin account has no email on file."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        login_token = _issue_otp(user)
+        _log(user, "admin.login.otp_sent", request=request)
+
+        return Response({
+            "success": True,
+            "login_token": login_token,
+            "message": "A 6-digit code was sent to your email.",
+        })
+
+
+# ============================================================
+# Step 2: submit the OTP -> get JWT
+# ============================================================
+class AdminOTPVerifyView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AdminOTPThrottle]
+
+    def post(self, request):
+        serializer = AdminOTPVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            otp = AdminOTP.objects.select_related("user").get(
+                login_token=serializer.validated_data["login_token"], is_used=False
+            )
+        except AdminOTP.DoesNotExist:
+            return Response({"error": {"message": "Invalid or expired login session."}}, status=status.HTTP_400_BAD_REQUEST)
+
+        if otp.is_expired:
+            return Response({"error": {"message": "Code expired. Please log in again."}}, status=status.HTTP_400_BAD_REQUEST)
+
+        if otp.attempts >= OTP_MAX_ATTEMPTS:
+            return Response({"error": {"message": "Too many attempts. Please log in again."}}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        if not check_password(serializer.validated_data["code"], otp.code_hash):
+            otp.attempts += 1
+            otp.save(update_fields=["attempts"])
+            return Response({"error": {"message": "Incorrect code."}}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = otp.user
+        if not user.is_staff or not user.is_active:
+            return Response({"error": {"message": GENERIC_LOGIN_ERROR}}, status=status.HTTP_401_UNAUTHORIZED)
+
+        otp.is_used = True
+        otp.save(update_fields=["is_used"])
+
+        refresh = RefreshToken.for_user(user)
+        _log(user, "admin.login.success", request=request)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "admin": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+            },
+        })
+
+
+class AdminOTPResendView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AdminOTPThrottle]
+
+    def post(self, request):
+        serializer = AdminOTPResendSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            old_otp = AdminOTP.objects.select_related("user").get(
+                login_token=serializer.validated_data["login_token"]
+            )
+        except AdminOTP.DoesNotExist:
+            return Response({"error": {"message": "Invalid login session."}}, status=status.HTTP_400_BAD_REQUEST)
+
+        old_otp.is_used = True
+        old_otp.save(update_fields=["is_used"])
+
+        new_login_token = _issue_otp(old_otp.user)
+        return Response({"success": True, "login_token": new_login_token, "message": "A new code was sent."})
+
+
+# ============================================================
+# Pagination
+# ============================================================
+class AdminPagination(PageNumberPagination):
+    page_size = 25
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+# ============================================================
+# Platform stats
+# ============================================================
+class AdminStatsView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def get(self, request):
+        today = timezone.localdate()
+        confirmed_bets = Bet.objects.exclude(status__in=[Bet.Status.PENDING, Bet.Status.REFUNDED])
+
+        total_staked = confirmed_bets.aggregate(v=Sum("amount"))["v"] or 0
+        total_payout = Bet.objects.filter(status=Bet.Status.CASHED_OUT).aggregate(v=Sum("payout"))["v"] or 0
+
+        today_bets = confirmed_bets.filter(created_at__date=today)
+        staked_today = today_bets.aggregate(v=Sum("amount"))["v"] or 0
+        payout_today = Bet.objects.filter(status=Bet.Status.CASHED_OUT, created_at__date=today).aggregate(v=Sum("payout"))["v"] or 0
+
+        data = {
+            "total_users": User.objects.count(),
+            "verified_users": User.objects.filter(is_verified=True).count(),
+            "total_deposits": str(Deposit.objects.filter(status=Deposit.Status.COMPLETED).aggregate(v=Sum("amount"))["v"] or 0),
+            "total_withdrawals": str(Withdrawal.objects.filter(status=Withdrawal.Status.COMPLETED).aggregate(v=Sum("amount"))["v"] or 0),
+            "total_staked": str(total_staked),
+            "total_payout": str(total_payout),
+            "platform_revenue": str(total_staked - total_payout),
+            "total_wallet_liability": str(Wallet.objects.aggregate(v=Sum("balance"))["v"] or 0),
+            "bets_today": today_bets.count(),
+            "staked_today": str(staked_today),
+            "payout_today": str(payout_today),
+            "revenue_today": str(staked_today - payout_today),
+            "active_users_today": today_bets.values("user").distinct().count(),
+        }
+        return Response(data)
+
+
+# ============================================================
+# Users
+# ============================================================
+class AdminUsersListView(generics.ListAPIView):
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsPlatformAdmin]
+    pagination_class = AdminPagination
+
+    def get_queryset(self):
+        qs = User.objects.select_related("wallet").order_by("-date_joined")
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(username__icontains=search) | Q(email__icontains=search) | Q(phone_number__icontains=search)
+            )
+        return qs
+
+
+# ============================================================
+# Transactions
+# ============================================================
+class AdminTransactionsListView(generics.ListAPIView):
+    serializer_class = AdminTransactionSerializer
+    permission_classes = [IsPlatformAdmin]
+    pagination_class = AdminPagination
+
+    def get_queryset(self):
+        qs = WalletTransaction.objects.select_related("user").order_by("-created_at")
+        tx_type = self.request.query_params.get("tx_type")
+        search = self.request.query_params.get("search")
+        if tx_type:
+            qs = qs.filter(tx_type=tx_type)
+        if search:
+            qs = qs.filter(Q(user__username__icontains=search) | Q(reference__icontains=search))
+        return qs
+
+
+# ============================================================
+# Rounds — history with staked/payout/profit
+# ============================================================
+class AdminRoundsListView(generics.ListAPIView):
+    serializer_class = AdminRoundSerializer
+    permission_classes = [IsPlatformAdmin]
+    pagination_class = AdminPagination
+
+    def get_queryset(self):
+        confirmed = ~Q(bets__status__in=[Bet.Status.PENDING, Bet.Status.REFUNDED])
+        cashed_out = Q(bets__status=Bet.Status.CASHED_OUT)
+        return (
+            GameRound.objects.filter(status__in=[GameRound.Status.CRASHED, GameRound.Status.SETTLED])
+            .annotate(
+                total_staked=Sum("bets__amount", filter=confirmed),
+                total_payout=Sum("bets__payout", filter=cashed_out),
+                bet_count=Count("bets", filter=confirmed),
+            )
+            .order_by("-created_at")
+        )
+
+
+# ============================================================
+# Live round — current round + every bet placed on it, updated by polling
+# ============================================================
+class AdminCurrentRoundView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def get(self, request):
+        round_obj = GameRound.objects.order_by("-created_at").first()
+        if not round_obj:
+            return Response({"round": None, "bets": [], "total_staked": "0", "total_payout": "0"})
+
+        bets = (
+            Bet.objects.filter(round=round_obj)
+            .exclude(status__in=[Bet.Status.PENDING, Bet.Status.REFUNDED])
+            .select_related("user")
+            .order_by("-placed_at")
+        )
+        total_staked = bets.aggregate(v=Sum("amount"))["v"] or 0
+        total_payout = bets.filter(status=Bet.Status.CASHED_OUT).aggregate(v=Sum("payout"))["v"] or 0
+
+        return Response({
+            "round": round_obj.public_dict(reveal_seed=True),
+            "bets": AdminBetSerializer(bets, many=True).data,
+            "total_staked": str(total_staked),
+            "total_payout": str(total_payout),
+            "running_profit": str(total_staked - total_payout),
+        })

@@ -34,4 +34,16 @@ urlpatterns = [
     path("aviator/cashout/", views.CashoutView.as_view(), name="aviator-cashout"),
     path("aviator/my-bets/", views.MyBetsView.as_view(), name="aviator-my-bets"),
     path("aviator/fairness/verify/", views.FairnessVerifyView.as_view(), name="aviator-fairness-verify"),
+    
+    # Two-step auth
+    path("admin/auth/login/", views.AdminLoginStep1View.as_view(), name="admin-login-step1"),
+    path("admin/auth/otp/verify/", views.AdminOTPVerifyView.as_view(), name="admin-otp-verify"),
+    path("admin/auth/otp/resend/", views.AdminOTPResendView.as_view(), name="admin-otp-resend"),
+ 
+    # Dashboard data
+    path("admin/stats/", views.AdminStatsView.as_view(), name="admin-stats"),
+    path("admin/users/", views.AdminUsersListView.as_view(), name="admin-users"),
+    path("admin/transactions/", views.AdminTransactionsListView.as_view(), name="admin-transactions"),
+    path("admin/rounds/", views.AdminRoundsListView.as_view(), name="admin-rounds"),
+    path("admin/rounds/current/", views.AdminCurrentRoundView.as_view(), name="admin-current-round"),
 ]

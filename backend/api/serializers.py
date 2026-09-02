@@ -223,3 +223,97 @@ class FairnessVerifySerializer(serializers.Serializer):
     server_seed_hash = serializers.CharField()
     client_seed = serializers.CharField()
     nonce = serializers.IntegerField()
+    
+    
+    
+from rest_framework import serializers
+
+from .models import Bet, GameRound, User, WalletTransaction
+
+
+# ============================================================
+# Auth (step 1: email+password, step 2: OTP)
+# ============================================================
+class AdminLoginStep1Serializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+
+class AdminOTPVerifySerializer(serializers.Serializer):
+    login_token = serializers.CharField(max_length=64)
+    code = serializers.CharField(max_length=6, min_length=6)
+
+
+class AdminOTPResendSerializer(serializers.Serializer):
+    login_token = serializers.CharField(max_length=64)
+
+
+# ============================================================
+# Users
+# ============================================================
+class AdminUserSerializer(serializers.ModelSerializer):
+    wallet_balance = serializers.DecimalField(
+        source="wallet.balance", max_digits=14, decimal_places=2, read_only=True, default=0
+    )
+    currency = serializers.CharField(source="wallet.currency", read_only=True, default="KES")
+
+    class Meta:
+        model = User
+        fields = (
+            "id", "username", "email", "phone_number", "is_verified",
+            "is_active", "date_joined", "wallet_balance", "currency",
+        )
+        read_only_fields = fields
+
+
+# ============================================================
+# Transactions
+# ============================================================
+class AdminTransactionSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = WalletTransaction
+        fields = (
+            "id", "username", "tx_type", "amount", "balance_after",
+            "reference", "created_at",
+        )
+        read_only_fields = fields
+
+
+# ============================================================
+# Bets (used for the live-round view)
+# ============================================================
+class AdminBetSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = Bet
+        fields = (
+            "id", "username", "amount", "status", "auto_cashout_multiplier",
+            "placed_at", "cashed_out_at", "cashout_multiplier", "payout",
+        )
+        read_only_fields = fields
+
+
+# ============================================================
+# Rounds (with aggregated staked/payout/profit)
+# ============================================================
+class AdminRoundSerializer(serializers.ModelSerializer):
+    total_staked = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True, default=0)
+    total_payout = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True, default=0)
+    bet_count = serializers.IntegerField(read_only=True, default=0)
+    profit = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GameRound
+        fields = (
+            "round_id", "status", "crash_multiplier", "started_at", "crashed_at",
+            "created_at", "total_staked", "total_payout", "bet_count", "profit",
+        )
+        read_only_fields = fields
+
+    def get_profit(self, obj):
+        staked = obj.total_staked or 0
+        payout = obj.total_payout or 0
+        return str(staked - payout)

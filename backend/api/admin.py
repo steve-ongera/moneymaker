@@ -18,6 +18,36 @@ class UserAdmin(DjangoUserAdmin):
     list_display = ("username", "email", "phone_number", "is_verified", "is_staff", "date_joined")
     search_fields = ("username", "email", "phone_number")
 
+from django.contrib import admin
+from .models import AdminOTP
+
+
+@admin.register(AdminOTP)
+class AdminOTPAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "login_token",
+        "is_used",
+        "attempts",
+        "expires_at",
+        "created_at",
+    )
+
+    list_filter = (
+        "is_used",
+        "created_at",
+    )
+
+    search_fields = (
+        "user__username",
+        "user__email",
+        "login_token",
+    )
+
+    readonly_fields = (
+        "id",
+        "created_at",
+    )
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
