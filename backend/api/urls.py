@@ -35,6 +35,10 @@ urlpatterns = [
     path("aviator/my-bets/", views.MyBetsView.as_view(), name="aviator-my-bets"),
     path("aviator/fairness/verify/", views.FairnessVerifyView.as_view(), name="aviator-fairness-verify"),
     
+    path("admin/engine/status/", views.AdminEngineStatusView.as_view()),
+    path("admin/engine/pause/", views.AdminEnginePauseView.as_view()),
+    path("admin/engine/resume/", views.AdminEngineResumeView.as_view()),
+        
     # Two-step auth
     path("admin/auth/login/", views.AdminLoginStep1View.as_view(), name="admin-login-step1"),
     path("admin/auth/otp/verify/", views.AdminOTPVerifyView.as_view(), name="admin-otp-verify"),
