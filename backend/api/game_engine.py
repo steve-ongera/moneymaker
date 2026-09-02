@@ -20,6 +20,7 @@ from datetime import timedelta
 from decimal import ROUND_DOWN, Decimal
 from django.db import transaction
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Sum
 
 from asgiref.sync import sync_to_async
 from channels.layers import get_channel_layer
@@ -134,6 +135,15 @@ class RoundEngine:
                 "balance": str(wallet_balance),
                 "auto": True,
             })
+            # Admin room broadcast — auto cashouts, mirrors the manual path in views.py
+            await self._broadcast({
+                "type": "admin.bet_cashout",
+                "bet_id": str(bet.id),
+                "username": bet.user.username,
+                "multiplier": str(bet.cashout_multiplier),
+                "payout": str(bet.payout),
+                "auto": True,
+            })
 
     def _process_auto_cashouts_sync(self, round_obj: GameRound, multiplier: Decimal):
         due_bets = list(
@@ -214,6 +224,10 @@ class RoundEngine:
         })
 
     async def _settle_round(self, round_obj: GameRound):
+        # Build the summary BEFORE settle_round/status flip so PENDING/ACTIVE
+        # states haven't been rewritten out from under the aggregate yet.
+        summary = await sync_to_async(self._build_round_summary_sync)(round_obj)
+
         await sync_to_async(WalletService.settle_round)(round_obj)
         round_obj.status = GameRound.Status.SETTLED
         round_obj.settled_at = timezone.now()
@@ -223,6 +237,27 @@ class RoundEngine:
             "type": "round.settled",
             "round_id": round_obj.round_id,
         })
+
+        # Admin room broadcast — powers the "Last round" summary line
+        await self._broadcast({
+            "type": "admin.round_summary",
+            **summary,
+        })
+
+    def _build_round_summary_sync(self, round_obj: GameRound):
+        confirmed = Bet.objects.filter(round=round_obj).exclude(
+            status__in=[Bet.Status.PENDING, Bet.Status.REFUNDED]
+        )
+        staked = confirmed.aggregate(v=Sum("amount"))["v"] or 0
+        payout = confirmed.filter(status=Bet.Status.CASHED_OUT).aggregate(v=Sum("payout"))["v"] or 0
+        bet_count = confirmed.count()
+        return {
+            "round_id": round_obj.round_id,
+            "bet_count": bet_count,
+            "staked": str(staked),
+            "payout": str(payout),
+            "profit": str(staked - payout),
+        }
 
     async def _broadcast(self, payload: dict):
         await self.channel_layer.group_send(

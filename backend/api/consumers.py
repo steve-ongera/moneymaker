@@ -117,3 +117,21 @@ class AviatorConsumer(AsyncJsonWebsocketConsumer):
                 else None
             ),
         }
+
+
+# api/consumers.py — add alongside AviatorConsumer
+class AdminConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self):
+        user = self.scope.get("user")
+        logger.warning(f"AdminConsumer connect: user={user!r} authenticated={getattr(user, 'is_authenticated', None)} is_staff={getattr(user, 'is_staff', None)}")
+        if user is None or not user.is_authenticated or not user.is_staff:
+            await self.close(code=4403)
+            return
+        await self.channel_layer.group_add(GROUP_NAME, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(GROUP_NAME, self.channel_name)
+
+    async def engine_event(self, event):
+        await self.send_json(event["payload"])

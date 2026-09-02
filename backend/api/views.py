@@ -619,6 +619,10 @@ class CashoutThrottle(UserRateThrottle):
     scope = "cashout"
 
 
+# add this import near your other local imports at the top of views.py
+from .game_engine import GROUP_NAME
+
+
 class PlaceBetView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [BetThrottle]
@@ -658,6 +662,20 @@ class PlaceBetView(APIView):
         }
         _notify_user(request.user.id, payload)
         _log(request.user, "bet.placed", {"bet_id": str(bet.id), "amount": str(amount)}, request)
+
+        # Admin room broadcast — powers AdminLiveRound's live bets table
+        async_to_sync(channel_layer.group_send)(GROUP_NAME, {
+            "type": "engine.event",
+            "payload": {
+                "type": "admin.bet_placed",
+                "bet_id": str(bet.id),
+                "username": request.user.username,
+                "amount": str(bet.amount),
+                "auto_cashout_multiplier": str(auto_cashout) if auto_cashout else None,
+                "status": bet.status,
+                "placed_at": bet.placed_at.isoformat(),
+            },
+        })
 
         return Response(BetSerializer(bet).data, status=status.HTTP_201_CREATED)
 
@@ -717,8 +735,20 @@ class CashoutView(APIView):
         _notify_user(request.user.id, payload)
         _log(request.user, "bet.cashout", {"bet_id": str(bet.id), "payout": str(bet.payout)}, request)
 
-        return Response(BetSerializer(bet).data, status=status.HTTP_200_OK)
+        # Admin room broadcast — manual cashouts (auto cashouts are broadcast from game_engine.py)
+        async_to_sync(channel_layer.group_send)(GROUP_NAME, {
+            "type": "engine.event",
+            "payload": {
+                "type": "admin.bet_cashout",
+                "bet_id": str(bet.id),
+                "username": request.user.username,
+                "multiplier": str(bet.cashout_multiplier),
+                "payout": str(bet.payout),
+                "auto": False,
+            },
+        })
 
+        return Response(BetSerializer(bet).data, status=status.HTTP_200_OK)
 
 class MyBetsView(generics.ListAPIView):
     serializer_class = BetSerializer
