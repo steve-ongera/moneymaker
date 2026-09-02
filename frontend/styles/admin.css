@@ -309,7 +309,7 @@ a:hover {
   border-right: 1px solid var(--admin-border);
   display: flex;
   flex-direction: column;
-  transition: width var(--admin-transition);
+  transition: transform var(--admin-transition-slow), width var(--admin-transition);
   z-index: 20;
   position: sticky;
   top: 0;
@@ -328,6 +328,7 @@ a:hover {
   color: var(--admin-text);
   border-bottom: 1px solid var(--admin-divider);
   letter-spacing: -0.02em;
+  position: relative;
 }
 
 .admin-sidebar-brand span {
@@ -693,6 +694,8 @@ a:hover {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 18px;
+  padding: 0 20px;
+  padding-top: 16px;
 }
 
 .admin-toolbar input, 
@@ -801,6 +804,12 @@ a:hover {
   50% { opacity: 0.4; transform: scale(0.85); }
 }
 
+/* Spinner Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ==========================================================================
    7. DATA TABLES & PAGINATION
    ========================================================================== */
@@ -904,9 +913,10 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 18px;
+  padding: 16px 20px;
   font-size: 0.85rem;
   color: var(--admin-muted);
+  border-top: 1px solid var(--admin-divider);
 }
 
 .admin-pagination-controls {
@@ -925,6 +935,9 @@ a:hover {
   cursor: pointer;
   transition: all var(--admin-transition-fast);
   box-shadow: var(--admin-shadow-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .admin-pagination button:hover:not(:disabled) {
@@ -958,7 +971,51 @@ a:hover {
 }
 
 /* ==========================================================================
-   8. RESPONSIVE BREAKPOINTS & MOBILE ADAPTATIONS
+   8. SIDEBAR TOGGLE & DRAWER (MOBILE)
+   ========================================================================== */
+
+/* Navbar Toggle Button - Hidden on Desktop */
+.admin-navbar-toggle {
+  display: none !important;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--admin-radius);
+  transition: all var(--admin-transition-fast);
+  line-height: 1;
+}
+
+.admin-navbar-toggle:hover {
+  background: var(--admin-panel-hover);
+}
+
+/* Sidebar Overlay */
+.admin-sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 19;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   9. RESPONSIVE BREAKPOINTS & MOBILE ADAPTATIONS
    ========================================================================== */
 
 /* Tablet (Under 1024px) */
@@ -982,49 +1039,108 @@ a:hover {
 
 /* Mobile & Small Tablet (Under 768px) */
 @media (max-width: 768px) {
-  .admin-shell {
-    flex-direction: column;
+  /* Show toggle button on mobile */
+  .admin-navbar-toggle {
+    display: flex !important;
   }
 
+  /* Show overlay on mobile when sidebar is open */
+  .admin-sidebar-overlay {
+    display: none;
+  }
+  
+  .admin-sidebar-overlay.active {
+    display: block !important;
+  }
+
+  /* Sidebar becomes a drawer */
   .admin-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--admin-border);
-    position: relative;
-    height: auto;
-    max-height: 300px;
+    position: fixed;
     top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--admin-sidebar-width);
+    transform: translateX(-100%);
+    transition: transform var(--admin-transition-slow);
+    z-index: 20;
+    border-right: 1px solid var(--admin-border);
+    box-shadow: var(--admin-shadow-lg);
+    height: 100vh;
+    overflow: hidden;
   }
 
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Main content takes full width */
+  .admin-main {
+    width: 100%;
+  }
+
+  /* Sidebar brand on mobile */
   .admin-sidebar-brand {
     height: 56px;
+    padding: 0 20px;
+    font-size: 1.1rem;
   }
 
+  /* Close button on sidebar brand */
+  .admin-sidebar-brand .admin-sidebar-close {
+    display: flex;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--admin-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--admin-radius);
+    transition: all var(--admin-transition-fast);
+  }
+
+  .admin-sidebar-brand .admin-sidebar-close:hover {
+    background: var(--admin-panel-hover);
+    color: var(--admin-text);
+  }
+
+  /* Sidebar content on mobile */
   .admin-sidebar-content {
-    padding: 12px;
-    gap: 12px;
+    padding: 16px 12px;
+    gap: 16px;
     overflow-y: auto;
   }
 
+  /* Sidebar nav on mobile - vertical again */
   .admin-sidebar-nav {
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    flex-wrap: nowrap;
+    flex-direction: column;
+    overflow-x: visible;
+    flex-wrap: wrap;
   }
 
   .admin-sidebar-link {
     white-space: nowrap;
+    padding: 10px 12px;
   }
 
   .admin-sidebar-link span {
     white-space: nowrap;
   }
 
+  /* Show section titles on mobile */
   .admin-sidebar-section-title {
-    display: none;
+    display: block;
   }
 
+  /* Sidebar footer on mobile */
+  .admin-sidebar-footer {
+    padding: 12px 16px;
+  }
+
+  /* Navbar adjustments */
   .admin-navbar {
     height: 56px;
     padding: 0 16px;
@@ -1049,6 +1165,7 @@ a:hover {
   .admin-toolbar {
     flex-direction: column;
     align-items: stretch;
+    padding: 16px 16px 0 16px;
   }
 
   .admin-toolbar input[type="search"],
@@ -1060,6 +1177,7 @@ a:hover {
 
   .admin-toolbar-count {
     margin-left: 0;
+    text-align: center;
   }
 
   .admin-table-container {
@@ -1070,12 +1188,31 @@ a:hover {
     flex-direction: column;
     gap: 12px;
     align-items: center;
+    padding: 16px;
   }
 
   .admin-page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .admin-stat-card {
+    padding: 16px;
+  }
+
+  .admin-stat-value {
+    font-size: 1.5rem;
+  }
+
+  .admin-auth-card {
+    padding: 32px 24px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 10px 14px;
+    font-size: 0.8rem;
   }
 }
 
@@ -1090,11 +1227,57 @@ a:hover {
   }
 
   .admin-stat-value {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+  }
+
+  .admin-sidebar {
+    width: 280px;
+  }
+
+  .admin-sidebar-brand {
+    font-size: 1rem;
+    padding: 0 16px;
   }
 
   .admin-sidebar-link {
-    padding: 8px 10px;
-    font-size: 0.8rem;
+    padding: 8px 12px;
+    font-size: 0.85rem;
   }
+
+  .admin-sidebar-content {
+    padding: 12px 10px;
+    gap: 12px;
+  }
+
+  .admin-navbar-user button {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .admin-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .admin-pagination button {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .admin-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+  }
+}
+
+/* Prevent body scroll when sidebar is open on mobile */
+body.sidebar-open {
+  overflow: hidden;
 }

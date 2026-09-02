@@ -12,7 +12,7 @@ const managementLinks = [
   { to: "/admin/transactions", label: "Transactions", icon: "bi-receipt" },
 ];
 
-function NavLinkItem({ link }) {
+function NavLinkItem({ link, onClick }) {
   return (
     <NavLink
       key={link.to}
@@ -21,6 +21,7 @@ function NavLinkItem({ link }) {
       className={({ isActive }) => 
         `admin-sidebar-link${isActive ? " active" : ""}`
       }
+      onClick={onClick}
     >
       <i className={`bi ${link.icon}`} />
       <span>{link.label}</span>
@@ -28,40 +29,67 @@ function NavLinkItem({ link }) {
   );
 }
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ isOpen, onClose }) {
+  // Handle link click on mobile - close sidebar
+  const handleLinkClick = () => {
+    if (window.innerWidth <= 768) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="admin-sidebar">
-      {/* Brand - Fixed at top */}
-      <div className="admin-sidebar-brand">
-        MoneyMaker <span>Admin</span>
-      </div>
+    <>
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div 
+          className="admin-sidebar-overlay"
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 19,
+            display: 'none',
+          }}
+        />
+      )}
       
-      {/* Scrollable content area */}
-      <div className="admin-sidebar-content">
-        <div className="admin-sidebar-section">
-          <div className="admin-sidebar-section-title">Main</div>
-          <nav className="admin-sidebar-nav">
-            {mainLinks.map((link) => (
-              <NavLinkItem key={link.to} link={link} />
-            ))}
-          </nav>
+      <aside className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
+        {/* Brand - Fixed at top */}
+        <div className="admin-sidebar-brand">
+          MoneyMaker <span>Admin</span>
         </div>
-        <div className="admin-sidebar-section">
-          <div className="admin-sidebar-section-title">Management</div>
-          <nav className="admin-sidebar-nav">
-            {managementLinks.map((link) => (
-              <NavLinkItem key={link.to} link={link} />
-            ))}
-          </nav>
+        
+        {/* Scrollable content area */}
+        <div className="admin-sidebar-content">
+          <div className="admin-sidebar-section">
+            <div className="admin-sidebar-section-title">Main</div>
+            <nav className="admin-sidebar-nav">
+              {mainLinks.map((link) => (
+                <NavLinkItem key={link.to} link={link} onClick={handleLinkClick} />
+              ))}
+            </nav>
+          </div>
+          <div className="admin-sidebar-section">
+            <div className="admin-sidebar-section-title">Management</div>
+            <nav className="admin-sidebar-nav">
+              {managementLinks.map((link) => (
+                <NavLinkItem key={link.to} link={link} onClick={handleLinkClick} />
+              ))}
+            </nav>
+          </div>
         </div>
-      </div>
-      
-      {/* Footer - Fixed at bottom */}
-      <div className="admin-sidebar-footer">
-        <span className="admin-badge admin-badge-accent">
-          v2.0.0
-        </span>
-      </div>
-    </aside>
+        
+        {/* Footer - Fixed at bottom */}
+        <div className="admin-sidebar-footer">
+          <span className="admin-badge admin-badge-accent">
+            v2.0.0
+          </span>
+        </div>
+      </aside>
+    </>
   );
 }
