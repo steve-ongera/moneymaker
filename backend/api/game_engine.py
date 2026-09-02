@@ -10,6 +10,9 @@ Run it as a standalone process alongside Daphne:
 It never trusts anything from the frontend — crash points are pre-committed via
 api.fairness before betting opens, and the multiplier shown to clients is always
 recomputed from `round.started_at`, never accumulated client-side.
+
+Pause/resume (EngineControl) only ever takes effect BETWEEN rounds — a round already
+in progress always plays out to its pre-committed crash point and settles normally.
 """
 
 import asyncio
@@ -28,7 +31,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from .fairness import compute_crash_multiplier, generate_server_seed, hash_server_seed
-from .models import Bet, GameRound
+from .models import Bet, GameRound, EngineControl
 from .wallet import DuplicateRequest, InvalidBetState, WalletService
 
 logger = logging.getLogger("aviator.engine")
@@ -55,15 +58,44 @@ class RoundEngine:
 
     def __init__(self):
         self.channel_layer = get_channel_layer()
+        self._was_paused = False  # tracks last-seen pause state, so we only broadcast on transitions
 
     async def run_forever(self):
         logger.info("MoneyMaker Aviator engine starting")
         while True:
             try:
+                await self._wait_if_paused()
                 await self._run_single_round()
             except Exception:
                 logger.exception("Round loop crashed — recovering in 2s")
                 await asyncio.sleep(2)
+
+    async def _wait_if_paused(self):
+        """
+        Called ONLY between rounds — never mid-round. Blocks starting the next
+        round while EngineControl.is_paused is True. A round already in
+        progress is never affected, since this is only checked at the top of
+        the outer loop, before _create_round is called.
+        """
+        control = await sync_to_async(EngineControl.get_solo)()
+
+        if control.is_paused and not self._was_paused:
+            self._was_paused = True
+            logger.info(f"Engine paused: {control.reason}")
+            await self._broadcast({
+                "type": "engine.paused",
+                "reason": control.reason,
+                "paused_by": control.paused_by.username if control.paused_by else None,
+            })
+
+        while control.is_paused:
+            await asyncio.sleep(1)
+            control = await sync_to_async(EngineControl.get_solo)()
+
+        if self._was_paused:
+            self._was_paused = False
+            logger.info("Engine resumed")
+            await self._broadcast({"type": "engine.resumed"})
 
     async def _run_single_round(self):
         round_obj = await self._create_round()

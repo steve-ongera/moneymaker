@@ -6,9 +6,9 @@ const WS_BASE = API_BASE_URL.replace(/^http/, "ws").replace(/\/api\/v1\/?$/, "")
 
 /**
  * Live feed from the game engine + bet stream, straight from
- * ws/admin/ (see api/admin_consumers.py). No polling — every round.*,
- * multiplier.update, admin.bet_placed, admin.bet_cashout, and
- * admin.round_summary event comes from the actual engine process.
+ * ws/admin/ (see api/consumers.py AdminConsumer). No polling — every round.*,
+ * multiplier.update, admin.bet_placed, admin.bet_cashout, admin.round_summary,
+ * and engine.paused/engine.resumed event comes from the actual engine process.
  */
 export function useAdminSocket() {
   const [status, setStatus] = useState("connecting"); // connecting | open | closed
@@ -16,6 +16,7 @@ export function useAdminSocket() {
   const [multiplier, setMultiplier] = useState("1.00");
   const [betsMap, setBetsMap] = useState({});
   const [lastRoundSummary, setLastRoundSummary] = useState(null);
+  const [engineStatus, setEngineStatus] = useState({ isPaused: false, reason: "", pausedBy: null });
 
   const socketRef = useRef(null);
   const reconnectRef = useRef(null);
@@ -121,6 +122,14 @@ export function useAdminSocket() {
           setLastRoundSummary(payload);
           break;
 
+        case "engine.paused":
+          setEngineStatus({ isPaused: true, reason: payload.reason || "", pausedBy: payload.paused_by || null });
+          break;
+
+        case "engine.resumed":
+          setEngineStatus({ isPaused: false, reason: "", pausedBy: null });
+          break;
+
         default:
           break;
       }
@@ -150,5 +159,5 @@ export function useAdminSocket() {
     return { staked, payout, profit: staked - payout, count: bets.length };
   }, [bets]);
 
-  return { status, round, multiplier, bets, totals, lastRoundSummary };
+  return { status, round, multiplier, bets, totals, lastRoundSummary, engineStatus };
 }

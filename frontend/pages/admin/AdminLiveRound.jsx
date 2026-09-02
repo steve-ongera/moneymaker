@@ -1,5 +1,7 @@
 // pages/admin/AdminLiveRound.jsx
+import { useState } from "react";
 import { useAdminSocket } from "../../hooks/useAdminSocket.js";
+import { pauseEngine, resumeEngine } from "../../services/adminClient.js";
 
 const fmt = (n) => Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
 const fmtNumber = (n) => Number(n || 0).toLocaleString();
@@ -27,7 +29,8 @@ const BET_STATUS_ICON = {
 };
 
 export default function AdminLiveRound() {
-  const { status, round, multiplier, bets, totals, lastRoundSummary } = useAdminSocket();
+  const { status, round, multiplier, bets, totals, lastRoundSummary, engineStatus } = useAdminSocket();
+  const [busy, setBusy] = useState(false);
 
   const getBetStatusBadge = (status) => {
     const statusKey = status?.toLowerCase() || "";
@@ -45,6 +48,26 @@ export default function AdminLiveRound() {
     return `${Number(value).toFixed(2)}x`;
   };
 
+  const handleTogglePause = async () => {
+    setBusy(true);
+    try {
+      if (engineStatus.isPaused) {
+        await resumeEngine();
+      } else {
+        const reason = window.prompt(
+          "Reason for pausing (optional). The current round will finish and settle normally; no new round will start after it.",
+          "Maintenance"
+        );
+        if (reason === null) return; // cancelled
+        await pauseEngine(reason || "");
+      }
+    } catch (e) {
+      alert(e.message || "Failed to update engine state");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <>
       <div className="admin-page-header">
@@ -58,15 +81,44 @@ export default function AdminLiveRound() {
             <i className={`bi ${status === "open" ? "bi-broadcast" : "bi-clock"}`} />
             {' '}{STATUS_LABEL[status] || status}
           </span>
+          <button
+            className={`admin-button ${engineStatus.isPaused ? "admin-button-positive" : "admin-button-warning"}`}
+            onClick={handleTogglePause}
+            disabled={busy}
+            title={
+              engineStatus.isPaused
+                ? "Resume starting new rounds"
+                : "Stop new rounds from starting after the current one finishes"
+            }
+          >
+            <i className={`bi ${engineStatus.isPaused ? "bi-play-circle" : "bi-pause-circle"}`} />
+            {' '}{engineStatus.isPaused ? "Resume Engine" : "Pause Engine"}
+          </button>
         </div>
       </div>
+
+      {engineStatus.isPaused && (
+        <div className="admin-note" style={{ background: 'var(--admin-warning-light)', marginBottom: '16px' }}>
+          <i className="bi bi-pause-circle" style={{ marginRight: '8px' }} />
+          <strong>Engine paused</strong> — the current round will finish and settle normally against its
+          pre-committed crash point; no new round will start after it.
+          {engineStatus.reason && <span> Reason: {engineStatus.reason}</span>}
+          {engineStatus.pausedBy && <span> (by {engineStatus.pausedBy})</span>}
+        </div>
+      )}
 
       {!round ? (
         <div className="admin-card">
           <div className="admin-card-body" style={{ textAlign: 'center', padding: '60px 20px' }}>
             <i className="bi bi-hourglass-split" style={{ fontSize: '3rem', color: 'var(--admin-muted)', display: 'block', marginBottom: '16px' }} />
-            <h3 style={{ color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Waiting for the next round</h3>
-            <p style={{ color: 'var(--admin-muted)' }}>No active round at the moment. Check back shortly.</p>
+            <h3 style={{ color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>
+              {engineStatus.isPaused ? "Engine is paused" : "Waiting for the next round"}
+            </h3>
+            <p style={{ color: 'var(--admin-muted)' }}>
+              {engineStatus.isPaused
+                ? "No new rounds will start until you resume the engine."
+                : "No active round at the moment. Check back shortly."}
+            </p>
             {lastRoundSummary && (
               <div style={{ marginTop: '20px', padding: '12px 16px', background: 'var(--admin-panel-subtle)', borderRadius: 'var(--admin-radius)', display: 'inline-block' }}>
                 <span style={{ color: 'var(--admin-muted)', fontSize: '0.85rem' }}>

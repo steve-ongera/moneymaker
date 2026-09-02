@@ -49,6 +49,33 @@ class AdminOTPAdmin(admin.ModelAdmin):
         "created_at",
     )
 
+from django.contrib import admin
+from .models import EngineControl
+
+
+@admin.register(EngineControl)
+class EngineControlAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "is_paused",
+        "paused_by",
+        "paused_at",
+        "reason",
+    )
+
+    list_filter = (
+        "is_paused",
+    )
+
+    search_fields = (
+        "reason",
+        "paused_by__username",
+        "paused_by__email",
+    )
+
+    readonly_fields = (
+        "id",
+    )
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):

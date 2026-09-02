@@ -152,4 +152,22 @@ export async function getAdminCurrentRound() {
   return data;
 }
 
+// ============================================================
+// Engine control (pause/resume — see api/models.py EngineControl)
+// ============================================================
+export async function getEngineStatus() {
+  const { data } = await adminClient.get("/admin/engine/status/");
+  return data; // { is_paused, paused_by, paused_at, reason }
+}
+
+export async function pauseEngine(reason = "") {
+  const { data } = await adminClient.post("/admin/engine/pause/", { reason });
+  return data; // { success, message, is_paused }
+}
+
+export async function resumeEngine() {
+  const { data } = await adminClient.post("/admin/engine/resume/");
+  return data; // { success, message, is_paused }
+}
+
 export default adminClient;
