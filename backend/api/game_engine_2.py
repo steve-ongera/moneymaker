@@ -38,6 +38,12 @@ logger = logging.getLogger("aviator.engine")
 
 GROUP_NAME = "aviator_room"
 BROADCAST_INTERVAL_SECONDS = 0.1  # 10 updates/sec — deliberately not 100ms polling from clients
+PAUSE_CHECK_INTERVAL_SECONDS = 0.1  # how often we re-read EngineControl while paused
+FROZEN_BROADCAST_INTERVAL_SECONDS = 1.0  # how often we tell clients "still paused" while frozen
+
+# django-solo convention. If your EngineControl singleton uses a different PK,
+# change this (or better: tell me the real lookup and I'll wire it in).
+ENGINE_CONTROL_PK = 1
 
 
 def calculate_multiplier(elapsed_seconds: Decimal) -> Decimal:
@@ -62,6 +68,7 @@ class RoundEngine:
         self._is_paused = False  # internal pause state for mid-round pausing
         self._paused_at = None  # timestamp when pause started
         self._total_paused_duration = Decimal('0')  # total time paused so far
+        self._last_frozen_broadcast_at = None  # throttles multiplier.frozen spam while paused
 
     async def run_forever(self):
         logger.info("MoneyMaker Aviator engine starting")
@@ -72,18 +79,36 @@ class RoundEngine:
                 logger.exception("Round loop crashed — recovering in 2s")
                 await asyncio.sleep(2)
 
+    # ----------------------------------------------------------
+    # Pause/resume
+    # ----------------------------------------------------------
+    def _fetch_engine_control_sync(self) -> EngineControl:
+        """
+        Direct, uncached DB read. We deliberately do NOT go through get_solo()
+        (or any cache-backed accessor) here: this is called every ~100ms from a
+        separate process (run_game_engine) than the one flipping the pause flag
+        (Daphne/admin), and a per-process cache (e.g. LocMemCache) would make
+        this process blind to pause/resume until its own cache entry expires
+        or the process restarts. Hitting the DB directly guarantees we see the
+        flag within one poll interval, every time.
+        """
+        return EngineControl.objects.get(pk=ENGINE_CONTROL_PK)
+
     async def _check_pause_state(self):
         """
         Check if engine should be paused or resumed. Updates internal state
-        and broadcasts transitions.
+        and broadcasts transitions. Called at PAUSE_CHECK_INTERVAL_SECONDS
+        cadence in both directions (paused -> running loop, and while paused),
+        so a pause/resume toggle is picked up within ~100ms either way.
         """
-        control = await sync_to_async(EngineControl.get_solo)()
+        control = await sync_to_async(self._fetch_engine_control_sync)()
 
         # Transition to paused state
         if control.is_paused and not self._is_paused:
             self._is_paused = True
             self._paused_at = timezone.now()
             self._was_paused = True
+            self._last_frozen_broadcast_at = None
             logger.info(f"Engine paused: {control.reason}")
             await self._broadcast({
                 "type": "engine.paused",
@@ -99,7 +124,7 @@ class RoundEngine:
             if self._paused_at:
                 paused_duration = Decimal(str((timezone.now() - self._paused_at).total_seconds()))
                 self._total_paused_duration += paused_duration
-            
+
             self._is_paused = False
             self._paused_at = None
             self._was_paused = False
@@ -133,9 +158,9 @@ class RoundEngine:
             # Check pause state during betting
             is_paused = await self._check_pause_state()
             if is_paused:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(PAUSE_CHECK_INTERVAL_SECONDS)
                 continue
-            
+
             await asyncio.sleep(0.1)
             betting_elapsed += Decimal('0.1')
 
@@ -151,43 +176,59 @@ class RoundEngine:
 
         await self._run_multiplier_loop(round_obj)
         await self._settle_round(round_obj)
-        
+
         # Reset pause tracking for next round
         self._total_paused_duration = Decimal('0')
         self._paused_at = None
-        
+        self._last_frozen_broadcast_at = None
+
         await asyncio.sleep(settings.AVIATOR_WAITING_DURATION_SECONDS)
 
     async def _run_multiplier_loop(self, round_obj: GameRound):
         """Runs the multiplier loop with mid-round pause support."""
         last_broadcast_multiplier = None
-        
+
         while True:
-            # Check pause state before each tick
+            # Check pause state before each tick — polled at the SAME cadence
+            # whether we're currently paused or running, so a resume is
+            # detected within ~100ms instead of lagging behind a slower
+            # "check once a second while paused" sleep.
             is_paused = await self._check_pause_state()
-            
+
             if is_paused:
-                # When paused, the multiplier freezes - we don't advance time
-                # Just broadcast the frozen multiplier periodically so clients know we're still alive
-                if last_broadcast_multiplier is not None:
+                # When paused, the multiplier freezes - we don't advance time.
+                # We still poll every PAUSE_CHECK_INTERVAL_SECONDS so resume is
+                # sharp, but we only broadcast the "still frozen" heartbeat at
+                # FROZEN_BROADCAST_INTERVAL_SECONDS so we don't spam clients.
+                now = timezone.now()
+                should_broadcast_frozen = (
+                    last_broadcast_multiplier is not None
+                    and (
+                        self._last_frozen_broadcast_at is None
+                        or (now - self._last_frozen_broadcast_at).total_seconds()
+                        >= FROZEN_BROADCAST_INTERVAL_SECONDS
+                    )
+                )
+                if should_broadcast_frozen:
+                    self._last_frozen_broadcast_at = now
                     await self._broadcast({
                         "type": "multiplier.frozen",
                         "round_id": round_obj.round_id,
                         "multiplier": str(last_broadcast_multiplier),
-                        "server_time": timezone.now().isoformat(),
+                        "server_time": now.isoformat(),
                         "paused": True,
                     })
-                await asyncio.sleep(1)  # Check pause state every second while paused
+                await asyncio.sleep(PAUSE_CHECK_INTERVAL_SECONDS)
                 continue
 
             # Calculate effective elapsed time (subtract total paused duration)
             raw_elapsed = Decimal(str((timezone.now() - round_obj.started_at).total_seconds()))
             effective_elapsed = raw_elapsed - self._total_paused_duration
-            
+
             # Ensure we don't go negative
             if effective_elapsed < 0:
                 effective_elapsed = Decimal('0')
-            
+
             multiplier = calculate_multiplier(effective_elapsed)
 
             if multiplier >= round_obj.crash_multiplier:

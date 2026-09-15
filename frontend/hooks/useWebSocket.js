@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { tokenStore } from "../services/api.js";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws/aviator/";
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://127.0.0.1:8000/ws/aviator/";
 
 const HEARTBEAT_INTERVAL_MS = 15000;
 const MAX_RECONNECT_DELAY_MS = 10000;
@@ -102,4 +102,4 @@ export function useWebSocket(onMessage) {
   }, []);
 
   return { status, requestStateSync, disconnect, reconnect: connect };
-}
+}   

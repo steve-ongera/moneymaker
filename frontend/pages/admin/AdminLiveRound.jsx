@@ -48,6 +48,15 @@ export default function AdminLiveRound() {
     return `${Number(value).toFixed(2)}x`;
   };
 
+  // Live "if they cashed out right now" projection for still-active bets.
+  // Purely derived from amount * the public live multiplier — not from
+  // anything pre-committed, so this is safe to display in real time.
+  const projectedPayout = (bet) => {
+    const amount = Number(bet.amount || 0);
+    const live = Number(multiplier || 1);
+    return amount * live;
+  };
+
   const handleTogglePause = async () => {
     setBusy(true);
     try {
@@ -249,6 +258,7 @@ export default function AdminLiveRound() {
                   <th>Amount</th>
                   <th>Status</th>
                   <th>Auto Cashout</th>
+                  <th>Possible Payout</th>
                   <th>Cashout Multiplier</th>
                   <th>Payout</th>
                 </tr>
@@ -256,7 +266,7 @@ export default function AdminLiveRound() {
               <tbody>
                 {bets.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="admin-loading" style={{ border: 'none', boxShadow: 'none' }}>
                         <i className="bi bi-inbox" style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }} />
                         No bets placed on this round yet
@@ -297,6 +307,15 @@ export default function AdminLiveRound() {
                           {b.auto_cashout_multiplier ? (
                             <span style={{ fontWeight: '600', color: 'var(--admin-accent)' }}>
                               {formatMultiplier(b.auto_cashout_multiplier)}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--admin-placeholder)' }}>—</span>
+                          )}
+                        </td>
+                        <td>
+                          {isActive ? (
+                            <span style={{ fontWeight: '600', color: 'var(--admin-warning)' }}>
+                              KES {fmt(projectedPayout(b))}
                             </span>
                           ) : (
                             <span style={{ color: 'var(--admin-placeholder)' }}>—</span>

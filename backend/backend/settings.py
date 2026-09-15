@@ -16,8 +16,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-secret-key-change-me")
 DEBUG = os.environ.get("DEBUG", "True") == "True"
  
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
- 
+ALLOWED_HOSTS = ["*"]
+
 # ------------------------------------------------------------------
 # Applications
 # ------------------------------------------------------------------
@@ -168,9 +168,11 @@ SIMPLE_JWT = {
 # ------------------------------------------------------------------
 # CORS
 # ------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:5173"
-).split(",")
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://192.168.67.92:5173",
+]
+ 
 CORS_ALLOW_CREDENTIALS = True
  
 # ------------------------------------------------------------------

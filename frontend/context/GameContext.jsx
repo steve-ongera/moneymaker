@@ -8,6 +8,16 @@ import { useWebSocket } from "../hooks/useWebSocket.js";
 
 export const GameContext = createContext(null);
 
+// crypto.randomUUID() is only available in secure contexts (HTTPS or
+// localhost). On a LAN IP like http://192.168.x.x it's undefined, so fall
+// back to a simple id generator in that case.
+function generateId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
 // Mirrors api/game_engine.py's calculate_multiplier — used ONLY to interpolate
 // the animation smoothly between authoritative server broadcasts. The actual
 // payout multiplier always comes from the server.
@@ -37,7 +47,7 @@ export function GameProvider({ children }) {
   }, [round?.status]);
 
   const pushNotification = useCallback((notification) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     setNotifications((prev) => [...prev, { id, ...notification }]);
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -226,7 +236,7 @@ export function GameProvider({ children }) {
   // Bet / cash-out actions — optimistic UI handled by the calling component;
   // this just wraps the REST calls with request IDs for idempotency.
   const placeBet = useCallback(async (amount, autoCashoutMultiplier) => {
-    const requestId = crypto.randomUUID();
+    const requestId = generateId();
     const bet = await api.placeBet({ amount, requestId, autoCashoutMultiplier });
     setActiveBet({ bet_id: bet.id, amount: bet.amount, status: bet.status });
     return bet;
@@ -234,7 +244,7 @@ export function GameProvider({ children }) {
 
   const cashOutBet = useCallback(async () => {
     if (!activeBet?.bet_id) return;
-    const requestId = crypto.randomUUID();
+    const requestId = generateId();
     const bet = await api.cashOut({ betId: activeBet.bet_id, requestId });
     setActiveBet((prev) => ({
       ...prev,

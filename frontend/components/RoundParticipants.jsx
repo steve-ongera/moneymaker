@@ -17,6 +17,16 @@ import { useAviator } from "../hooks/useAviator.js";
 
 const KENYAN_PREFIXES = ["070", "071", "072", "074", "075", "079", "011"];
 
+// crypto.randomUUID() is only available in secure contexts (HTTPS or
+// localhost). On a LAN IP like http://192.168.x.x it's undefined, so fall
+// back to a simple id generator in that case.
+function generateId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
 function randomPhone() {
   const prefix = KENYAN_PREFIXES[Math.floor(Math.random() * KENYAN_PREFIXES.length)];
   let rest = "";
@@ -84,7 +94,7 @@ export default function RoundParticipants() {
         setPlayers((prev) => [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             phone: maskPhone(randomPhone()),
             stake: randomStake(),
             targetMultiplier: randomTargetMultiplier(),
