@@ -77,7 +77,12 @@ class RoundEngine:
         Check if engine should be paused or resumed. Updates internal state
         and broadcasts transitions.
         """
-        control = await sync_to_async(EngineControl.get_solo)()
+        # NOTE: control.paused_by is a FK — touching `.paused_by.username`
+        # lazily outside this sync_to_async boundary raises
+        # SynchronousOnlyOperation. Resolve the whole snapshot (including
+        # the related username) inside the sync helper, then only ever
+        # touch plain Python values back in async-land.
+        control, paused_by_username = await sync_to_async(self._get_pause_snapshot)()
 
         # Transition to paused state
         if control.is_paused and not self._is_paused:
@@ -88,7 +93,7 @@ class RoundEngine:
             await self._broadcast({
                 "type": "engine.paused",
                 "reason": control.reason,
-                "paused_by": control.paused_by.username if control.paused_by else None,
+                "paused_by": paused_by_username,
                 "timestamp": timezone.now().isoformat(),
             })
             return True
@@ -99,7 +104,7 @@ class RoundEngine:
             if self._paused_at:
                 paused_duration = Decimal(str((timezone.now() - self._paused_at).total_seconds()))
                 self._total_paused_duration += paused_duration
-            
+
             self._is_paused = False
             self._paused_at = None
             self._was_paused = False
@@ -112,6 +117,16 @@ class RoundEngine:
             return False
 
         return self._is_paused
+
+    def _get_pause_snapshot(self):
+        """
+        Sync-only helper: fetches EngineControl and resolves any related
+        fields (paused_by) while still inside a real DB-safe thread, so
+        callers in async code only ever touch plain values.
+        """
+        control = EngineControl.get_solo()
+        paused_by_username = control.paused_by.username if control.paused_by else None
+        return control, paused_by_username
 
     async def _run_single_round(self):
         round_obj = await self._create_round()
@@ -135,7 +150,7 @@ class RoundEngine:
             if is_paused:
                 await asyncio.sleep(0.1)
                 continue
-            
+
             await asyncio.sleep(0.1)
             betting_elapsed += Decimal('0.1')
 
@@ -151,21 +166,21 @@ class RoundEngine:
 
         await self._run_multiplier_loop(round_obj)
         await self._settle_round(round_obj)
-        
+
         # Reset pause tracking for next round
         self._total_paused_duration = Decimal('0')
         self._paused_at = None
-        
+
         await asyncio.sleep(settings.AVIATOR_WAITING_DURATION_SECONDS)
 
     async def _run_multiplier_loop(self, round_obj: GameRound):
         """Runs the multiplier loop with mid-round pause support."""
         last_broadcast_multiplier = None
-        
+
         while True:
             # Check pause state before each tick
             is_paused = await self._check_pause_state()
-            
+
             if is_paused:
                 # When paused, the multiplier freezes - we don't advance time
                 # Just broadcast the frozen multiplier periodically so clients know we're still alive
@@ -183,11 +198,11 @@ class RoundEngine:
             # Calculate effective elapsed time (subtract total paused duration)
             raw_elapsed = Decimal(str((timezone.now() - round_obj.started_at).total_seconds()))
             effective_elapsed = raw_elapsed - self._total_paused_duration
-            
+
             # Ensure we don't go negative
             if effective_elapsed < 0:
                 effective_elapsed = Decimal('0')
-            
+
             multiplier = calculate_multiplier(effective_elapsed)
 
             if multiplier >= round_obj.crash_multiplier:
